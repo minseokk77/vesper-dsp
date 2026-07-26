@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "notes": "Vesper DSP v0.0.1 (New Infrastructure)",
+  "platforms": {
+    "windows-x86_64": {
+      "url": "https://github.com/MINSEOKK77/vesper-dsp/releases/download/v0.0.1/VesperDSP_0.0.1_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlEwQmFibUx0UmR1YkJCaUpuZ2tVMXJZSnFYSDVNS3lPTEZWc3MxS0hhZ2FGdE9WN2hIZWNyTEErdG1RaEtHYmNkYk1rUHBucTF3NXc4QnlRaTFNQUFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MDU4NTA1CWZpbGU6VmVzcGVyRFNQXzAuMC4xX3g2NC1zZXR1cC5leGUKTFQ5TE9wS2NaYmZCcGNVbWdsMVNPOWNlblprRUJ3NXNIb3pCQVNkcURNOE14VWkrWGVlc1I2NExLaVZGT1JBRlIvSHNYRTdBa3gwa2JjQUFWckI1QkE9PQo="
+    }
+  },
+  "pub_date": "2026-07-26T09:31:44Z"
+}
