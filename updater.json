@@ -1,11 +1,11 @@
 {
-  "version": "0.0.6",
-  "notes": "Vesper DSP v0.0.6: fixed fresh-install launch when Windows UAC is disabled; updater installs are now quiet.",
-  "pub_date": "2026-07-26T15:04:22Z",
+  "version": "0.0.7",
+  "notes": "Vesper DSP v0.0.7: preserves the checked finish-page launch; UAC-off installs use Windows ShellExecute after Finish.",
+  "pub_date": "2026-07-26T23:56:40Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.6/VesperDSP_0.0.6_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlcwVUxuVGo2YUZVam5WK09VQmtyZ3g4NGhsT1BPQjBLZUg4eTZwRk4ra1IvL2xIZ3FRc0ZyMjJUWkszWjVFOHFiTTB4eWcwNkt1citkb1E0S1JieFFFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MDc4MTU0CWZpbGU6VmVzcGVyRFNQXzAuMC42X3g2NC1zZXR1cC5leGUKZ21zK2ZMU3hEL2d3RnZZK0laVVZ3R0taRFNmQ0tEWG10c01nbUt3djF1YUFzU202dWc3V3BLTVVldmxUY0x6OWJtdnlZRCtsa1BDRmdLOEptUkdqQkE9PQo="
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.7/VesperDSP_0.0.7_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmJCZzBGaFpYR3dBazVrcEU5aktnSnlFVFRwUUJXb0FVWGd3VXlMV2FaNkdXRFFiR0lFekZzb1N4eXI0QWNRYmJ5RG1RZW9qa3pTcUdNakROb0dFckFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MTEwMDk2CWZpbGU6VmVzcGVyRFNQXzAuMC43X3g2NC1zZXR1cC5leGUKMk0vZFZMbG9lVEFjNldLNERZaGplcXgvVStPM2ZLanlrUkhoRE5SemY1WlN6L2lsaVhrQStYb3Q3UWxyY09CWlVhR0lGRGF4NlBDUTU0VW5sNmFMRFE9PQo="
     }
   }
 }
