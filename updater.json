@@ -1,11 +1,11 @@
 {
-  "version": "0.0.4",
-  "notes": "Vesper DSP v0.0.4: restore live DSP setting changes while keeping settings across restarts.",
+  "version": "0.0.5",
+  "notes": "Vesper DSP v0.0.5: refined controls, persistent settings, and Woofer-aligned sizing.",
+  "pub_date": "2026-07-26T11:41:47Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/MINSEOKK77/vesper-dsp/releases/download/v0.0.4/VesperDSP_0.0.4_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlV3MU5Wa0lMYm1OVUV6TVJpb3F6TTBMVkcya3AvT1VoRFVmTm8rUFhXR0k0YlhHSGVhKzBXMWUxM0ZmZE8wWi8weTRMVjVzY0NycE8vQTJHbGQrWlFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MDYxNjU3CWZpbGU6VmVzcGVyRFNQXzAuMC40X3g2NC1zZXR1cC5leGUKandhOER4Ym1XUUlnTVFEcDFxcm1vVkRvdE9rK0ExS0pJeTZ5dzl5a0ZVUUFCbExGSThoQitOOHFXUHZMWDM4TlJ4bjhIdGVKTTBabkVhUEhUcnpSQlE9PQo="
+      "url": "https://github.com/MINSEOKK77/vesper-dsp/releases/download/v0.0.5/VesperDSP_0.0.5_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlRiYWdzWG1MUVRxRmJVR0JlSXcvVEdNcXB2Q3poN21UaGdTWVEvSmdaMXIwYWxxaHhxSFg5ZjY1YU9QdUptRGJia0pkYzJ2VmNTTUovR291MjZZNGdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MDY1OTEzCWZpbGU6VmVzcGVyRFNQXzAuMC41X3g2NC1zZXR1cC5leGUKQ0xuaXRSUThXbFcveHRIRmpXbUpheXRnVnJRRkZ6QnNpK3Q5eG53ai9mSXBaa3cralNSREFKLzR4SWp6WDdzblRJbU5IYlNEaHdMdkxpaVB3WitxQlE9PQo="
     }
-  },
-  "pub_date": "2026-07-26T10:27:44Z"
+  }
 }
