@@ -4,6 +4,7 @@
   import { emit, listen } from '@tauri-apps/api/event';
   import { getCurrentWindow } from '@tauri-apps/api/window';
   import { getVersion } from '@tauri-apps/api/app';
+  import { relaunch } from '@tauri-apps/plugin-process';
   import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
   import { enable as enableAutoStart, disable as disableAutoStart, isEnabled as isAutoStartEnabled } from '@tauri-apps/plugin-autostart';
   import { check as checkUpdate } from '@tauri-apps/plugin-updater';
@@ -61,6 +62,9 @@
   let currentVersion = '';
   let updateStatus = '업데이트 확인';
   let isCheckingUpdate = false;
+  let hasUpdate = false;
+  let newVersion = '';
+  let updateBody = '';
   const supportedRates = [44100, 48000, 88200, 96000, 176400, 192000, 352800, 384000, 705600, 768000];
 
   const rateOptions = () => [
@@ -138,7 +142,7 @@
         output,
         isAsio: false, // matches is_asio in rust due to Tauri's camelCase conversion
         headroomDb,
-        targetSampleRate: targetRate ? parseInt(targetRate, 10) : null,
+        targetSampleRate: targetRate,
         filterType,
         outputSampleFormat: null
       });
@@ -275,10 +279,12 @@
     try {
       const update = await checkUpdate();
       if (update) {
-        updateStatus = `v${update.version} 설치 가능`;
-        await update.downloadAndInstall();
-        updateStatus = '업데이트 완료! 재시작 필요';
+        hasUpdate = true;
+        newVersion = update.version;
+        updateBody = update.body || '새로운 기능 및 버그 수정이 포함되어 있습니다.';
+        updateStatus = '업데이트 가능';
       } else {
+        hasUpdate = false;
         updateStatus = '최신 버전입니다';
         setTimeout(() => { updateStatus = '업데이트 확인'; }, 3000);
       }
@@ -286,6 +292,27 @@
       console.error('Update failed:', e);
       updateStatus = '업데이트 실패';
       setTimeout(() => { updateStatus = '업데이트 확인'; }, 3000);
+    } finally {
+      isCheckingUpdate = false;
+    }
+  }
+
+  async function installUpdate() {
+    if (isCheckingUpdate) return;
+    isCheckingUpdate = true;
+    updateStatus = '다운로드 및 설치 중...';
+    try {
+      const update = await checkUpdate();
+      if (!update) {
+        hasUpdate = false;
+        updateStatus = '최신 버전입니다';
+        return;
+      }
+      await update.downloadAndInstall();
+      await relaunch();
+    } catch (e) {
+      console.error('Update install failed:', e);
+      updateStatus = '설치 실패. 다시 시도해주세요.';
     } finally {
       isCheckingUpdate = false;
     }
@@ -341,7 +368,7 @@
     });
   });
 
-  let restartTimer;
+  let restartTimer: ReturnType<typeof setTimeout>;
   $: {
     if (settingsRestored && (source || output || targetRate || strategy || filterType || dsdFilter || dsdGain || headroomDb || showClipping)) {
       save();
@@ -360,7 +387,7 @@
   
   <div class="liquid-glass w-full h-full flex flex-col relative overflow-hidden">
     
-    <div class="flex-1 flex flex-col justify-between h-full overflow-hidden p-5 pt-5 pb-3">
+    <div class="flex-1 flex flex-col gap-5 p-5 pt-5 overflow-y-auto overflow-x-hidden">
       
       <div class="flex items-center justify-between z-10 pb-2 gap-2 {isWindowLocked ? '' : 'cursor-grab active:cursor-grabbing'}" 
            on:mousedown={() => { if (!isWindowLocked) getCurrentWindow().startDragging(); }}>
@@ -373,10 +400,10 @@
         </div>
         
         <div class="flex items-center gap-2 shrink-0" on:mousedown|stopPropagation>
-          <button on:click={async () => { showSettings = true; await checkAutoStartStatus(); }} class="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 hover:bg-apple-blue/20 border border-white/10 transition-colors group" title="환경설정">
+          <button on:click={async () => { showSettings = true; await checkAutoStartStatus(); }} class="flex items-center justify-center w-5 h-5 bg-transparent transition-colors group" title="환경설정" aria-label="환경설정">
             <svg class="w-3.5 h-3.5 text-white/40 group-hover:text-apple-blue transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
           </button>
-          <button on:click={() => isSignalModalOpen = true} class="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 hover:bg-apple-blue/20 border border-white/10 transition-colors group" title="시그널 패스 보기">
+          <button on:click={() => isSignalModalOpen = true} class="flex items-center justify-center w-5 h-5 bg-transparent transition-colors group" title="시그널 패스 보기" aria-label="시그널 패스 보기">
             <svg class="w-3.5 h-3.5 text-white/40 group-hover:text-apple-blue transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012-2h-2a2 2 0 01-2-2z"></path></svg>
           </button>
           <button on:click={() => getCurrentWindow().minimize()} class="w-3.5 h-3.5 rounded-full bg-white/20 hover:bg-yellow-500 transition-colors"></button>
@@ -384,16 +411,16 @@
         </div>
       </div>
 
-      <div class="flex-1 flex flex-col justify-around h-full overflow-hidden">
+      <div class="flex flex-col gap-5">
         
         <div class="flex flex-col gap-3">
           <div class="w-full flex flex-col gap-1.5 relative group">
             <label class="text-[10px] font-semibold tracking-widest text-white/50 uppercase pl-1">Input Source</label>
-            <CustomSelect bind:value={source} options={devices.map(d => ({ value: d, label: d }))} bind:isOpen={sourceMenuOpen} compact />
+            <CustomSelect bind:value={source} options={devices.map(d => ({ value: d, label: d }))} bind:isOpen={sourceMenuOpen} />
           </div>
           <div class="w-full flex flex-col gap-1.5 relative group">
             <label class="text-[10px] font-semibold tracking-widest text-white/50 uppercase pl-1">Output Device</label>
-            <CustomSelect bind:value={output} options={devices.map(d => ({ value: d, label: d }))} bind:isOpen={outputMenuOpen} compact />
+            <CustomSelect bind:value={output} options={devices.map(d => ({ value: d, label: d }))} bind:isOpen={outputMenuOpen} />
           </div>
         </div>
 
@@ -410,7 +437,7 @@
                 <p class="text-[9px] text-white/40 mt-0.5">출력 샘플 속도 관리 방법</p>
               </div>
               <div class="w-48 shrink-0 text-right relative" class:z-50={strategyMenuOpen}>
-                <CustomSelect bind:value={strategy} bind:isOpen={strategyMenuOpen} options={strategyOptions} align="right" compact />
+                <CustomSelect bind:value={strategy} bind:isOpen={strategyMenuOpen} options={strategyOptions} align="right" />
               </div>
             </div>
 
@@ -419,7 +446,7 @@
                 <p class="text-[11px] font-semibold text-white/90">리샘플링 필터</p>
               </div>
               <div class="w-48 shrink-0 text-right relative" class:z-50={filterMenuOpen}>
-                <CustomSelect bind:value={filterType} bind:isOpen={filterMenuOpen} options={filterOptions} align="right" compact />
+                <CustomSelect bind:value={filterType} bind:isOpen={filterMenuOpen} options={filterOptions} align="right" />
               </div>
             </div>
             
@@ -428,7 +455,7 @@
                 <p class="text-[11px] font-semibold text-white/90">DSD ▶ PCM 필터</p>
               </div>
               <div class="w-48 shrink-0 text-right relative" class:z-50={dsdFilterMenuOpen}>
-                <CustomSelect bind:value={dsdFilter} bind:isOpen={dsdFilterMenuOpen} options={dsdFilterOptions} align="right" compact />
+                <CustomSelect bind:value={dsdFilter} bind:isOpen={dsdFilterMenuOpen} options={dsdFilterOptions} align="right" />
               </div>
             </div>
 
@@ -437,7 +464,7 @@
                 <p class="text-[11px] font-semibold text-white/90">DSD ▶ PCM 게인</p>
               </div>
               <div class="w-32 shrink-0 text-right relative" class:z-50={dsdGainMenuOpen}>
-                <CustomSelect bind:value={dsdGain} bind:isOpen={dsdGainMenuOpen} options={dsdGainOptions} align="right" compact />
+                <CustomSelect bind:value={dsdGain} bind:isOpen={dsdGainMenuOpen} options={dsdGainOptions} align="right" />
               </div>
             </div>
           </div>
@@ -543,75 +570,92 @@
 {/if}
 
 {#if showSettings}
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity" on:click={() => showSettings = false}>
-    <div class="relative w-full max-w-sm bg-[#0E0E10] border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col gap-6" on:click|stopPropagation>
-      <div class="flex items-center justify-between">
-        <h2 class="text-xl font-bold tracking-tight text-white/90 flex items-center gap-2">
+  <div class="absolute inset-0 z-50 flex items-center justify-center p-5 bg-black/60 backdrop-blur-md animate-in fade-in duration-200" on:click|self={() => showSettings = false}>
+    <div class="w-full max-w-sm bg-[#0E0E10]/95 border border-white/10 rounded-2xl flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.8)] overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b border-white/5 bg-white/5">
+        <h2 class="text-sm font-bold tracking-tight text-white/90 [&>svg]:hidden">
           <svg class="w-5 h-5 text-apple-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
           환경설정
         </h2>
-        <button on:click={() => showSettings = false} class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
-          <svg class="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        <button on:click={() => showSettings = false} class="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors" aria-label="환경설정 닫기">
+          <svg class="w-3 h-3 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>
 
-      <div class="flex flex-col gap-4">
+      <div class="p-5 flex-1 space-y-6">
+        <div class="space-y-3">
         <h3 class="text-[10px] font-bold tracking-widest text-white/50 uppercase">System</h3>
-        <div class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
-          <div class="flex flex-col">
-            <span class="text-sm font-bold text-white/90">자동 시작 (Auto Start)</span>
-            <span class="text-xs text-white/40 mt-1">Windows 부팅 시 앱을 백그라운드에서 실행합니다.</span>
+        <div class="flex justify-between items-center bg-black/30 p-4 rounded-xl border border-white/5">
+          <div>
+            <p class="text-xs font-semibold text-white/90">Windows 시작 시 자동 실행</p>
+            <p class="text-[9px] text-white/50 mt-1">부팅 시 백그라운드로 자동 실행</p>
           </div>
           <button
             on:click={toggleAutoStart}
             aria-label="Windows 시작 시 자동 실행 전환"
-            class="relative w-12 h-6 rounded-full transition-colors duration-300 {autoStartEnabled ? 'bg-apple-blue' : 'bg-white/10'}"
+            class="w-10 h-5 rounded-full transition-colors {autoStartEnabled ? 'bg-green-500' : 'bg-white/20'} relative"
           >
-            <div class="absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-sm {autoStartEnabled ? 'left-7' : 'left-1'}"></div>
+            <div class="absolute w-4 h-4 bg-white rounded-full top-[2px] transition-transform {autoStartEnabled ? 'translate-x-5' : 'translate-x-[2px]'} shadow-sm"></div>
           </button>
         </div>
 
-        <div class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
-          <div class="flex flex-col">
-            <span class="text-sm font-bold text-white/90">창 위치 잠금 (이동 방지)</span>
-            <span class="text-xs text-white/40 mt-1">원하는 곳에 둔 후 켜두면 해당 위치를 유지합니다.</span>
+        <div class="flex justify-between items-center bg-black/30 p-4 rounded-xl border border-white/5 mt-2">
+          <div>
+            <p class="text-xs font-semibold text-white/90">창 위치 잠금 (이동 방지)</p>
+            <p class="text-[9px] text-white/50 mt-1">원하는 곳에 둔 후 켜두면 항상 그 위치에 고정됨</p>
           </div>
           <button 
             on:click={toggleWindowLock}
             aria-label="창 위치 잠금 전환"
-            class="relative w-12 h-6 rounded-full transition-colors duration-300 {isWindowLocked ? 'bg-apple-blue' : 'bg-white/10'}"
+            class="w-10 h-5 rounded-full transition-colors {isWindowLocked ? 'bg-apple-blue' : 'bg-white/20'} relative"
           >
-            <div class="absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-sm {isWindowLocked ? 'left-7' : 'left-1'}"></div>
+            <div class="absolute w-4 h-4 bg-white rounded-full top-[2px] transition-transform {isWindowLocked ? 'translate-x-5' : 'translate-x-[2px]'} shadow-sm"></div>
           </button>
         </div>
+        </div>
 
-        <h3 class="text-[10px] font-bold tracking-widest text-white/50 uppercase pt-1">Updates</h3>
-        <div class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
-          <div class="flex flex-col">
-            <span class="text-sm font-bold text-white/90">현재 버전</span>
-            <span class="text-xs text-white/40 font-mono mt-1">v{currentVersion || '…'}</span>
+        <div class="space-y-3">
+          <h3 class="text-[10px] font-bold tracking-widest text-white/50 uppercase">Updates</h3>
+          <div class="flex flex-col bg-black/30 p-4 rounded-xl border border-white/5 gap-3">
+            <div class="flex justify-between items-center">
+              <div>
+                <p class="text-xs font-semibold text-white/90">현재 버전</p>
+                <p class="text-[10px] text-white/50 font-mono mt-0.5">v{currentVersion || '…'}</p>
+              </div>
+              {#if !hasUpdate}
+                <button on:click={checkForUpdates} disabled={isCheckingUpdate} class="px-3 py-1.5 text-[10px] font-semibold rounded-lg bg-apple-blue/10 text-apple-blue hover:bg-apple-blue/20 transition-colors flex items-center gap-1.5 {isCheckingUpdate ? 'opacity-50 cursor-not-allowed' : ''}">
+                  {updateStatus}
+                </button>
+              {/if}
+            </div>
+
+            {#if hasUpdate}
+              <div class="border-t border-white/5 pt-3 mt-1">
+                <p class="text-xs font-bold text-green-400 mb-1">새 버전 발견: v{newVersion}</p>
+                <p class="text-[10px] text-white/60 mb-3 leading-relaxed break-keep">{updateBody}</p>
+                <button on:click={installUpdate} disabled={isCheckingUpdate} class="w-full py-2 text-[11px] font-bold rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors {isCheckingUpdate ? 'opacity-50 cursor-not-allowed' : ''}">
+                  {isCheckingUpdate ? updateStatus : '지금 다운로드 및 다시 시작'}
+                </button>
+              </div>
+            {/if}
           </div>
-          <button
-            on:click={checkForUpdates}
-            disabled={isCheckingUpdate}
-            class="px-3 py-2 text-xs font-semibold rounded-xl bg-apple-blue/10 text-apple-blue border border-apple-blue/15 hover:bg-apple-blue/20 transition-colors disabled:opacity-50"
-          >
-            {isCheckingUpdate ? '확인 중...' : updateStatus}
-          </button>
         </div>
 
-        <div class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
-          <div class="flex flex-col">
-            <span class="text-sm font-bold text-white/90">오픈소스 고지</span>
-            <span class="text-xs text-white/40 mt-1">앱에 사용된 오픈소스 라이선스를 확인합니다.</span>
+        <div class="space-y-3">
+          <h3 class="text-[10px] font-bold tracking-widest text-white/50 uppercase">About</h3>
+        <div class="flex items-center justify-between bg-black/30 p-4 rounded-xl border border-white/5">
+          <div>
+            <p class="text-xs font-semibold text-white/90">오픈소스 고지</p>
+            <p class="text-[9px] text-white/50 mt-1">Vesper DSP에 사용된 오픈소스 라이선스를 확인합니다.</p>
           </div>
           <button 
             on:click={() => showLicense = true}
             title="고지 보기"
-            class="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 hover:border-white/20 active:scale-95 transition-all duration-300 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] group"
+            class="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-colors group"
           >
             <svg class="w-4 h-4 text-white/50 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           </button>
+        </div>
         </div>
       </div>
     </div>
@@ -651,9 +695,9 @@
   .apple-slider {
     -webkit-appearance: none;
     width: 100%;
-    height: 4px;
+    height: 6px;
     background: rgba(255, 255, 255, 0.15);
-    border-radius: 2px;
+    border-radius: 3px;
     outline: none;
     transition: background 0.3s;
   }

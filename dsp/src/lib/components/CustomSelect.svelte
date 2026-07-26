@@ -6,7 +6,6 @@
   export let align = 'left'; // 'left' | 'right'
   export let customClass = '';
   export let textClass = 'text-white/90';
-  export let compact = false;
   export let bgClass = 'bg-[#1C1C1E] border border-white/10 hover:bg-[#2C2C2E]';
   
   export  let isOpen = false;
@@ -42,7 +41,7 @@
   <button 
     bind:this={buttonElement}
     type="button"
-    class="w-full flex items-center justify-between gap-3 {bgClass} text-sm font-medium outline-none rounded-xl {compact ? 'px-3 py-2' : 'px-4 py-3'} cursor-pointer transition-all shadow-sm"
+    class="w-full flex items-center justify-between gap-3 {bgClass} text-sm font-medium outline-none rounded-xl px-4 py-3 cursor-pointer transition-all shadow-sm"
     on:click={toggle}
   >
     <span class="truncate {value === null ? 'opacity-50' : ''} {textClass}">

@@ -5,7 +5,7 @@
   import { goto } from '$app/navigation';
   import { getCurrentWindow } from '@tauri-apps/api/window';
 
-  onMount(async () => {
+  onMount(() => {
     // Tauri 다중 창 버그(항상 메인 화면 렌더링) 해결을 위한 강제 라우팅
     const windowLabel = getCurrentWindow().label;
     if (windowLabel === 'signal_path') {
@@ -14,17 +14,19 @@
       goto('/dsp');
     }
 
-    let unlisten_min: () => void;
+    let unlistenMin: (() => void) | undefined;
     
     listen('window-minimized', () => {
       // 메인 창이 트레이로 내려갈 때만 메인 화면으로 리셋 (팝업 창은 무시)
       if (windowLabel === 'main') {
         goto('/');
       }
-    }).then(f => unlisten_min = f);
+    }).then((unlisten) => {
+      unlistenMin = unlisten;
+    });
 
     return () => {
-      if (unlisten_min) unlisten_min();
+      unlistenMin?.();
     };
   });
 </script>

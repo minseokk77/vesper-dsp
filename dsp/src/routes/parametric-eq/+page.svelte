@@ -566,7 +566,7 @@
             <div class="flex flex-col gap-3 justify-center relative">
               <label class="text-[10px] font-bold text-white/40 uppercase tracking-widest">Q Factor (Width)</label>
               <div class="flex items-end gap-2">
-                <input type="number" bind:value={bands[activeBandIndex].q_value} step="0.1" min="0.1" max="10" class="w-full bg-[#16161c] border border-white/10 rounded-xl px-4 py-3 text-lg font-mono text-white outline-none focus:border-green-500 transition-colors" />
+                <input type="number" bind:value={bands[activeBandIndex].q} step="0.1" min="0.1" max="10" class="w-full bg-[#16161c] border border-white/10 rounded-xl px-4 py-3 text-lg font-mono text-white outline-none focus:border-green-500 transition-colors" />
               </div>
               <button on:click={() => removeBand(activeBandIndex)} class="absolute -top-2 right-0 text-[10px] font-bold text-red-500/70 hover:text-red-400 uppercase tracking-widest hover:bg-red-500/10 px-2 py-1 rounded-md transition-colors">
                 Remove Band

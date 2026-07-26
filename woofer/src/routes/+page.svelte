@@ -468,13 +468,13 @@
     <div class="flex-1 flex flex-col gap-5 p-5 pt-5 overflow-y-auto overflow-x-hidden">
       <!-- 헤더부: 타이틀 및 API 토글 (통합된 드래그 & 컨트롤바) -->
       <div 
-        class="flex items-start justify-between z-10 pb-2 {isWindowLocked ? '' : 'cursor-grab active:cursor-grabbing'}"
+        class="flex items-center justify-between z-10 pb-2 gap-2 {isWindowLocked ? '' : 'cursor-grab active:cursor-grabbing'}"
         on:mousedown={() => { if (!isWindowLocked) getCurrentWindow().startDragging(); }}
       >
         <!-- 좌측: 메인 타이틀 및 상태 (드래그 반응) -->
-        <div class="pointer-events-none">
-          <h1 class="text-2xl font-bold tracking-tight text-white/90">Vesper <span class="text-white/30 font-normal mx-0.5">|</span> Woofer</h1>
-          <div class="flex items-center gap-1.5 w-fit mt-1 px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+        <div class="pointer-events-none flex items-center gap-2 shrink-0">
+          <h1 class="text-xl font-bold tracking-tight text-white/90 whitespace-nowrap">Vesper <span class="text-white/30 font-normal mx-0.5">|</span> Woofer</h1>
+          <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 shrink-0">
             <div class="h-1.5 w-1.5 rounded-full transition-all duration-500 {isSyncing ? 'bg-apple-blue shadow-[0_0_10px_rgba(10,132,255,0.8)]' : 'bg-white/20'}"></div>
             <span class="text-[9px] font-bold text-white/50 tracking-widest uppercase mt-px">
               {isSyncing ? 'Active' : 'Standby'}
@@ -483,15 +483,15 @@
         </div>
 
         <!-- 우측: 컨트롤 영역 (드래그 이벤트 전파 방지) -->
-        <div class="flex flex-col items-end gap-3" on:mousedown|stopPropagation>
+        <div class="flex items-center gap-2 shrink-0" on:mousedown|stopPropagation>
           <!-- 윈도우 조작 버튼 -->
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
             <!-- 설정 버튼 -->
-            <button on:click={openSettings} class="w-4 h-4 rounded-full bg-transparent flex items-center justify-center text-white/40 hover:text-white/80 transition-colors cursor-pointer mr-1" aria-label="Settings" title="환경설정">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            <button on:click={openSettings} class="flex items-center justify-center w-5 h-5 bg-transparent transition-colors group" aria-label="Settings" title="환경설정">
+              <svg class="w-3.5 h-3.5 text-white/40 group-hover:text-apple-blue transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
             </button>
-            <button on:click={() => getCurrentWindow().minimize()} class="w-3 h-3 rounded-full bg-white/20 hover:bg-yellow-500 transition-colors" aria-label="Minimize"></button>
-            <button on:click={() => getCurrentWindow().hide()} class="w-3 h-3 rounded-full bg-white/20 hover:bg-red-500 transition-colors" aria-label="Hide to Tray"></button>
+            <button on:click={() => getCurrentWindow().minimize()} class="w-3.5 h-3.5 rounded-full bg-white/20 hover:bg-yellow-500 transition-colors" aria-label="Minimize"></button>
+            <button on:click={() => getCurrentWindow().hide()} class="w-3.5 h-3.5 rounded-full bg-white/20 hover:bg-red-500 transition-colors" aria-label="Hide to Tray"></button>
           </div>
         </div>
       </div>
@@ -645,17 +645,20 @@
       </div>
     </div>
 
-    <!-- 재생/중지 토글 버튼 -->
-    <button 
-      class="w-full mt-auto mb-2 py-3 rounded-2xl font-bold text-sm tracking-wide uppercase transition-all duration-300 active:scale-[0.97]
-             {isSyncing 
-               ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.15)]' 
-               : 'bg-white text-black hover:bg-gray-200 shadow-lg'}"
-      on:click={toggleSync}
-    >
-      {isSyncing ? 'Stop Engine' : 'Engage Sync'}
-    </button>
     </div> <!-- 메인 컨텐츠 영역 끝 -->
+
+    <!-- 재생/중지 토글 버튼 -->
+    <div class="px-5 pb-5 pt-2 mt-auto">
+      <button
+        class="w-full py-3 rounded-2xl font-bold text-sm tracking-wide uppercase transition-all duration-300 active:scale-[0.97]
+               {isSyncing
+                 ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.15)]'
+                 : 'bg-white text-black hover:bg-gray-200 shadow-lg'}"
+        on:click={toggleSync}
+      >
+        {isSyncing ? 'Stop Engine' : 'Engage Sync'}
+      </button>
+    </div>
 
     <!-- Toast Notification -->
     {#if toastMessage}
