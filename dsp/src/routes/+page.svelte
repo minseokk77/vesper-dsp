@@ -343,7 +343,7 @@
 
   let restartTimer;
   $: {
-    if (settingsRestored) {
+    if (settingsRestored && (source || output || targetRate || strategy || filterType || dsdFilter || dsdGain || headroomDb || showClipping)) {
       save();
       if (isRunning && typeof window !== 'undefined') {
         clearTimeout(restartTimer);
