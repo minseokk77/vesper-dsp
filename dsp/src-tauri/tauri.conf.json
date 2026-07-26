@@ -1,0 +1,46 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "VesperDSP",
+  "version": "0.0.1",
+  "identifier": "com.vesper.dsp",
+  "build": {
+    "beforeDevCommand": "",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Vesper DSP",
+        "width": 360,
+        "height": 850,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJEQjIwRUQ4MzI5QjY4RkQKUldUOWFKc3kyQTZ5dlJGQmFJYzdFTVo0MEhJSVhnZXVkUkVhL1JHeVF3VnlyT2VrZFpzRHhlL0UK",
+      "endpoints": [
+        "https://raw.githubusercontent.com/MINSEOKK77/vesper-dsp/main/latest.json"
+      ]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

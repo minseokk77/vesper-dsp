@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-apple-blue: #0A84FF;
+  --color-apple-gray: #1C1C1E;
+  --color-apple-text: #F5F5F7;
+  --color-glass-base: rgba(28, 28, 30, 1.0);
+  --color-glass-border: rgba(255, 255, 255, 0.12);
+}
+
+@layer utilities {
+  .liquid-glass {
+    @apply bg-[var(--color-glass-base)] backdrop-blur-[40px] saturate-[180%] shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden;
+  }
+  
+  .glass-panel {
+    @apply bg-white/5 backdrop-blur-md border border-white/5 shadow-inner rounded-[20px] transition-all duration-300;
+  }
+  
+  .apple-slider {
+    @apply w-full h-1.5 bg-white/10 rounded-full appearance-none outline-none cursor-pointer;
+  }
+  
+  .apple-slider::-webkit-slider-thumb {
+    @apply appearance-none w-5 h-5 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.5)] cursor-pointer transition-transform duration-200;
+  }
+  
+  .apple-slider::-webkit-slider-thumb:active {
+    @apply scale-110;
+  }
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
+  background-color: transparent;
+  color: var(--color-apple-text);
+  @apply antialiased overflow-hidden select-none flex items-center justify-center min-h-screen;
+}
+
+/* Hide scrollbars globally */
+::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
