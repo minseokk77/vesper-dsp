@@ -1,11 +1,11 @@
 {
-  "version": "0.0.2",
-  "notes": "Vesper DSP v0.0.2: settings now show the current version and support window position locking.",
+  "version": "0.0.3",
+  "notes": "Vesper DSP v0.0.3: persist audio and DSP settings across app restarts.",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/MINSEOKK77/vesper-dsp/releases/download/v0.0.2/VesperDSP_0.0.2_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmVLbkE1SHJjaUFuMlFsMTVUYjdsZmMza0JuM2NXbGNKMzNmWFVQVElTay96MVRLTnJMNTA5L1BXVjluR0dKck9YajFJUzBGdEg3UzE5N1Y0c0J5eFFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MDYwMjQ0CWZpbGU6VmVzcGVyRFNQXzAuMC4yX3g2NC1zZXR1cC5leGUKaE5oUHJMbG0xLzBQaFVGYk93NlkzUU00ODdFb0Fwdk1HblBLR2RJaGU5VVNDeUlEV3VXS3JzZDBhNDBrZEcybWcxSFBud0ROWGc2bzcycnhIL1gwRGc9PQo="
+      "url": "https://github.com/MINSEOKK77/vesper-dsp/releases/download/v0.0.3/VesperDSP_0.0.3_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlZIUy92TmlPNUQwaWdRc2pTNHRwb1h2c0ZTS0lIT1BwOUQyZ1I1SjJGbjNQMTVBc1hKRkhFS004MWZ5TTc1L1c5VGFWSWswL1ZmQnQrYUxMb1V6Z1FJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MDYxMTU1CWZpbGU6VmVzcGVyRFNQXzAuMC4zX3g2NC1zZXR1cC5leGUKbXRPK3lSNWpQbzV4QUIxOVJMaldCcnhoeUVxMXF3RmNuQVBmMnRudjZPbnQxbnVSS2dnSnQwQTNxVlRQRkRKejFCZy9iRVpDakdUY2lIZWpydWNhQWc9PQo="
     }
   },
-  "pub_date": "2026-07-26T10:04:12Z"
+  "pub_date": "2026-07-26T10:20:30Z"
 }
