@@ -1,0 +1,11 @@
+{
+  "version": "1.4.0",
+  "notes": "Vesper DSP v1.4.0 Release",
+  "pub_date": "2026-07-26T16:30:00Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "SIGNATURE_HERE",
+      "url": "https://github.com/minseokk7/vesper-dsp/releases/download/v1.4.0/VesperDSP_1.4.0_x64-setup.exe"
+    }
+  }
+}
