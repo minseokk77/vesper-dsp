@@ -152,7 +152,7 @@ fn main() {
 
             tauri::tray::TrayIconBuilder::new()
                 .icon(tray_image)
-                .tooltip("Woofer Sync")
+                .tooltip("Vesper Woofer")
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "open" => {

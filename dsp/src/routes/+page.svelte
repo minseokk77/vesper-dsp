@@ -3,13 +3,14 @@
   import { invoke } from '@tauri-apps/api/core';
   import { emit, listen } from '@tauri-apps/api/event';
   import { getCurrentWindow } from '@tauri-apps/api/window';
+  import { getVersion } from '@tauri-apps/api/app';
   import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
   import { enable as enableAutoStart, disable as disableAutoStart, isEnabled as isAutoStartEnabled } from '@tauri-apps/plugin-autostart';
   import { check as checkUpdate } from '@tauri-apps/plugin-updater';
   import CustomSelect from '$lib/components/CustomSelect.svelte';
 
   // 상태 변수
-  let isWindowLocked = typeof window !== 'undefined' ? localStorage.getItem('ws_isWindowLocked') === 'true' : false;
+  let isWindowLocked = typeof window !== 'undefined' ? localStorage.getItem('vesper_dsp_window_locked') === 'true' : false;
   let isRunning = false;
   let isMuted = false;
   let devices: string[] = [];
@@ -56,6 +57,7 @@
   let showSettings = false;
   let showLicense = false;
   let autoStartEnabled = false;
+  let currentVersion = '';
   let updateStatus = '업데이트 확인';
   let isCheckingUpdate = false;
   const supportedRates = [44100, 48000, 88200, 96000, 176400, 192000, 352800, 384000, 705600, 768000];
@@ -259,6 +261,11 @@
     }
   }
 
+  function toggleWindowLock() {
+    isWindowLocked = !isWindowLocked;
+    localStorage.setItem('vesper_dsp_window_locked', String(isWindowLocked));
+  }
+
   async function checkForUpdates() {
     if (isCheckingUpdate) return;
     isCheckingUpdate = true;
@@ -284,6 +291,7 @@
 
   onMount(async () => {
     await fetchDevices();
+    currentVersion = await getVersion();
     
     const t = localStorage.getItem('vesper_dsp_target_rate'); if (t) targetRate = Number(t);
     const st = localStorage.getItem('vesper_dsp_strategy'); if (st) strategy = st;
@@ -543,13 +551,15 @@
       </div>
 
       <div class="flex flex-col gap-4">
+        <h3 class="text-[10px] font-bold tracking-widest text-white/50 uppercase">System</h3>
         <div class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
           <div class="flex flex-col">
             <span class="text-sm font-bold text-white/90">자동 시작 (Auto Start)</span>
             <span class="text-xs text-white/40 mt-1">Windows 부팅 시 앱을 백그라운드에서 실행합니다.</span>
           </div>
-          <button 
+          <button
             on:click={toggleAutoStart}
+            aria-label="Windows 시작 시 자동 실행 전환"
             class="relative w-12 h-6 rounded-full transition-colors duration-300 {autoStartEnabled ? 'bg-apple-blue' : 'bg-white/10'}"
           >
             <div class="absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-sm {autoStartEnabled ? 'left-7' : 'left-1'}"></div>
@@ -558,20 +568,30 @@
 
         <div class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
           <div class="flex flex-col">
-            <span class="text-sm font-bold text-white/90">버전 업데이트</span>
-            <span class="text-xs text-white/40 mt-1">최신 Vesper DSP 엔진으로 업데이트합니다.</span>
+            <span class="text-sm font-bold text-white/90">창 위치 잠금 (이동 방지)</span>
+            <span class="text-xs text-white/40 mt-1">원하는 곳에 둔 후 켜두면 해당 위치를 유지합니다.</span>
           </div>
           <button 
+            on:click={toggleWindowLock}
+            aria-label="창 위치 잠금 전환"
+            class="relative w-12 h-6 rounded-full transition-colors duration-300 {isWindowLocked ? 'bg-apple-blue' : 'bg-white/10'}"
+          >
+            <div class="absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-sm {isWindowLocked ? 'left-7' : 'left-1'}"></div>
+          </button>
+        </div>
+
+        <h3 class="text-[10px] font-bold tracking-widest text-white/50 uppercase pt-1">Updates</h3>
+        <div class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
+          <div class="flex flex-col">
+            <span class="text-sm font-bold text-white/90">현재 버전</span>
+            <span class="text-xs text-white/40 font-mono mt-1">v{currentVersion || '…'}</span>
+          </div>
+          <button
             on:click={checkForUpdates}
             disabled={isCheckingUpdate}
-            title="업데이트 확인"
-            class="w-8 h-8 rounded-full flex items-center justify-center bg-apple-blue/10 border border-apple-blue/20 backdrop-blur-md hover:bg-apple-blue/20 hover:border-apple-blue/40 active:scale-95 transition-all duration-300 disabled:opacity-50 shadow-[0_0_10px_rgba(10,132,255,0.1)] hover:shadow-[0_0_15px_rgba(10,132,255,0.3)] group"
+            class="px-3 py-2 text-xs font-semibold rounded-xl bg-apple-blue/10 text-apple-blue border border-apple-blue/15 hover:bg-apple-blue/20 transition-colors disabled:opacity-50"
           >
-            {#if isCheckingUpdate}
-              <svg class="animate-spin h-4 w-4 text-apple-blue" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            {:else}
-              <svg class="w-4 h-4 text-apple-blue/70 group-hover:text-apple-blue transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            {/if}
+            {isCheckingUpdate ? '확인 중...' : updateStatus}
           </button>
         </div>
 

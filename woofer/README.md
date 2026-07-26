@@ -1,6 +1,6 @@
-# 🎧 Woofer Sync
+# 🎧 Vesper Woofer
 
-**Woofer Sync**는 PC에서 하나의 오디오 소스를 이어폰(또는 메인 헤드폰)과 서브 우퍼(스피커) 등 **2개의 출력 기기로 지연 없이 동시에 복제(라우팅)**해주는 고성능 오디오 동기화 유틸리티입니다.
+**Vesper Woofer**는 PC에서 하나의 오디오 소스를 이어폰(또는 메인 헤드폰)과 서브 우퍼(스피커) 등 **2개의 출력 기기로 지연 없이 동시에 복제(라우팅)**해주는 고성능 오디오 동기화 유틸리티입니다.
 
 Rust 기반의 초저지연 오디오 엔진과 Liquid Glass(글래스모피즘) 디자인이 적용된 Svelte UI를 결합하여, 무거운 DAW 소프트웨어 없이도 강력한 크로스오버 네트워크와 위상 정렬 기능을 아주 가볍게 사용할 수 있습니다.
 
@@ -60,12 +60,12 @@ Rust 기반의 초저지연 오디오 엔진과 Liquid Glass(글래스모피즘)
 ## 🚀 사용 가이드 (How to Use)
 
 ### 1. 가상 오디오 케이블 설치 준비
-Woofer Sync는 입력된 소리를 잡아채서 2곳으로 뿌려줍니다. 따라서 PC의 기본 출력 장치를 가상 케이블로 설정해야 합니다.
+Vesper Woofer는 입력된 소리를 잡아채서 2곳으로 뿌려줍니다. 따라서 PC의 기본 출력 장치를 가상 케이블로 설정해야 합니다.
 - 추천 가상 케이블: [VB-Audio Virtual Cable](https://vb-audio.com/Cable/) 또는 [Hi-Fi Cable](https://vb-audio.com/Cable/) 등.
 
 ### 2. 세팅 방법
 1. 윈도우 기본 소리 출력 장치를 **`Hi-Fi Cable Input`**으로 설정합니다.
-2. **Woofer Sync** 앱을 실행합니다.
+2. **Vesper Woofer** 앱을 실행합니다.
 3. **AUDIO SOURCE** 란에서 방금 윈도우 기본 장치로 잡은 `Hi-Fi Cable Output`을 선택합니다.
 4. **PRIMARY EARPHONES** 에 사용 중인 이어폰/헤드폰(또는 메인 DAC)을 선택합니다.
 5. **SUB WOOFER** 에 베이스를 울려줄 서브 스피커를 선택합니다.
@@ -96,4 +96,4 @@ pnpm tauri build
 
 ---
 
-**Woofer Sync** © 2026. Made with ❤️ using Tauri & Svelte.
+**Vesper Woofer** © 2026. Made with ❤️ using Tauri & Svelte.
