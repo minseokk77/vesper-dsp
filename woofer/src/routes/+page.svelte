@@ -486,7 +486,7 @@
       >
         <!-- 좌측: 메인 타이틀 및 상태 (드래그 반응) -->
         <div class="pointer-events-none">
-          <h1 class="text-2xl font-bold tracking-tight text-white/90">Vesper Woofer</h1>
+          <h1 class="text-2xl font-bold tracking-tight text-white/90">Vesper <span class="text-white/30 font-normal mx-0.5">|</span> Woofer</h1>
           <div class="flex items-center gap-2 mt-1">
             <div class="h-2 w-2 rounded-full transition-all duration-500 {isSyncing ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-red-500/80'}"></div>
             <span class="text-xs font-medium text-white/50 tracking-wider uppercase">
@@ -773,10 +773,12 @@
                 <p class="text-[9px] text-white/50 mt-1">Vesper Woofer에 사용된 오픈소스 라이선스를 확인합니다.</p>
               </div>
               <button
-                class="px-3 py-1.5 text-[10px] font-semibold rounded-lg bg-white/10 text-white/80 hover:bg-white/20 transition-colors"
+                class="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-colors group"
                 on:click={() => isLicenseOpen = true}
+                aria-label="오픈소스 고지 보기"
+                title="고지 보기"
               >
-                보기
+                <svg class="w-4 h-4 text-white/50 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
               </button>
             </div>
           </div>
@@ -800,18 +802,10 @@
         </button>
       </div>
       <div class="p-5 space-y-3 overflow-y-auto">
-        <p class="text-[11px] text-white/60 leading-relaxed">Vesper Woofer는 아래 오픈소스 프로젝트를 사용합니다. 각 프로젝트의 전체 라이선스는 해당 배포본과 원본 저장소에서 확인할 수 있습니다.</p>
+        <p class="text-[11px] text-white/60 leading-relaxed">Vesper Woofer는 OPRA/AutoEQ 데이터를 사용합니다.</p>
         <div class="rounded-xl bg-black/30 border border-white/5 p-3">
-          <p class="text-xs font-semibold text-white/90">Tauri</p>
-          <p class="text-[10px] text-white/50 mt-1">MIT 또는 Apache-2.0</p>
-        </div>
-        <div class="rounded-xl bg-black/30 border border-white/5 p-3">
-          <p class="text-xs font-semibold text-white/90">Svelte</p>
-          <p class="text-[10px] text-white/50 mt-1">MIT</p>
-        </div>
-        <div class="rounded-xl bg-black/30 border border-white/5 p-3">
-          <p class="text-xs font-semibold text-white/90">CPAL · Rubato · Biquad</p>
-          <p class="text-[10px] text-white/50 mt-1">오디오 처리에 사용된 Rust 오픈소스 라이브러리</p>
+          <p class="text-xs font-semibold text-white/90">OPRA / AutoEQ</p>
+          <p class="text-[10px] text-white/50 mt-1">헤드폰·이어폰 EQ 프로파일 데이터 · MIT License</p>
         </div>
       </div>
     </div>
