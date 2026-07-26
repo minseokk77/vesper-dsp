@@ -131,9 +131,8 @@
     const dg = localStorage.getItem(`ws_dsdGain_${deviceName}`); if (dg) dsdGain = dg;
 
     // 백엔드에서 기기가 지원하는 실제 샘플 레이트 목록 조회
-    let isAsioMode = localStorage.getItem('ws_isAsioMode') === 'true';
     let apiDeviceName = deviceName.includes('FiiO') ? deviceName : deviceName.split('(')[0].trim();
-    invoke<number[]>('get_device_supported_sample_rates', { deviceName: apiDeviceName, isAsio: isAsioMode })
+    invoke<number[]>('get_device_supported_sample_rates', { deviceName: apiDeviceName })
       .then((rates) => {
         supportedSampleRates = rates;
         if (!targetSampleRate && rates.length > 0) {

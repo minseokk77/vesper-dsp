@@ -52,12 +52,12 @@ pub fn update_earphone_eq_profile(profile: EqProfile) {
     }
 }
 
-fn get_host(_is_asio: bool) -> cpal::Host {
+fn get_host() -> cpal::Host {
     cpal::default_host()
 }
 
-pub fn get_available_devices(is_asio: bool) -> Vec<String> {
-    let host = get_host(is_asio);
+pub fn get_available_devices() -> Vec<String> {
+    let host = get_host();
     let mut device_names = Vec::new();
 
     if let Ok(devices) = host.output_devices() {
@@ -138,8 +138,8 @@ fn find_device(host: &cpal::Host, name: &str) -> Option<(cpal::Device, bool)> {
     None
 }
 
-pub fn get_device_sample_rate(device_name: &str, is_asio: bool) -> Result<u32, String> {
-    let host = get_host(is_asio);
+pub fn get_device_sample_rate(device_name: &str) -> Result<u32, String> {
+    let host = get_host();
     let (dev, is_input) = find_device(&host, device_name).ok_or("Device not found")?;
     let config = if is_input {
         find_best_input_config(&dev)?
@@ -149,8 +149,8 @@ pub fn get_device_sample_rate(device_name: &str, is_asio: bool) -> Result<u32, S
     Ok(config.sample_rate())
 }
 
-pub fn get_device_bit_depth(device_name: &str, is_asio: bool) -> Result<String, String> {
-    let host = get_host(is_asio);
+pub fn get_device_bit_depth(device_name: &str) -> Result<String, String> {
+    let host = get_host();
     let (dev, is_input) = find_device(&host, device_name).ok_or("Device not found")?;
     let config = if is_input {
         find_best_input_config(&dev)?
@@ -170,7 +170,7 @@ pub fn get_device_bit_depth(device_name: &str, is_asio: bool) -> Result<String, 
         _ => "Unknown Format".to_string(),
     };
 
-    if !is_asio && current_format == "32bit Float" {
+    if current_format == "32bit Float" {
         let mut max_int_bit = 0;
 
         let supported_configs: Vec<_> = if is_input {
@@ -212,11 +212,8 @@ pub fn get_device_bit_depth(device_name: &str, is_asio: bool) -> Result<String, 
     Ok(current_format)
 }
 
-pub fn get_device_supported_sample_rates(
-    device_name: &str,
-    is_asio: bool,
-) -> Result<Vec<u32>, String> {
-    let host = get_host(is_asio);
+pub fn get_device_supported_sample_rates(device_name: &str) -> Result<Vec<u32>, String> {
+    let host = get_host();
     let (dev, is_input) = find_device(&host, device_name).ok_or("Device not found")?;
 
     let mut rates = Vec::new();
@@ -255,7 +252,6 @@ pub fn start_audio_sync(
     delay_ms: u32,
     lpf_hz: f32,
     lpf_slope: u32,
-    is_asio: bool,
     headroom_db: f32,
     earphone_target_sr: Option<u32>,
     speaker_target_sr: Option<u32>,
@@ -268,7 +264,7 @@ pub fn start_audio_sync(
 
     IS_RUNNING.store(true, Ordering::SeqCst);
 
-    let host = get_host(is_asio);
+    let host = get_host();
     let (source_dev, is_source_input) = match find_device(&host, source_name) {
         Some((dev, is_input)) => (dev, is_input),
         None => {

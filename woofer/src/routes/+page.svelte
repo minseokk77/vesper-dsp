@@ -42,7 +42,6 @@
         if (data.delayMs !== undefined) delayMs = data.delayMs;
         if (data.lpfHz !== undefined) lpfHz = data.lpfHz;
         if (data.lpfSlope !== undefined) lpfSlope = data.lpfSlope;
-        if (data.isAsioMode !== undefined) isAsioMode = data.isAsioMode;
         if (data.selectedSource !== undefined) selectedSource = data.selectedSource;
         if (data.selectedEarphone !== undefined) selectedEarphone = data.selectedEarphone;
         if (data.selectedSpeaker !== undefined) selectedSpeaker = data.selectedSpeaker;
@@ -69,7 +68,7 @@
 
   function savePreset(name: string) {
     const data = { 
-      delayMs, lpfHz, lpfSlope, isAsioMode,
+      delayMs, lpfHz, lpfSlope,
       selectedSource, selectedEarphone, selectedSpeaker,
       headroomDb, showClipping, sampleRateStrategy, sampleRateFilter, dsdFilter, dsdGain,
       isEarphoneMuted, isSpeakerMuted
@@ -87,7 +86,6 @@
   let lpfHz = 80;
   let lpfSlope = 24; // 0 (Off), 12, 24
   let isSyncing = false;
-  let isAsioMode = false; 
 
   // 고급 DSP 설정 상태 변수 (Roon Style)
   let headroomDb = -3.0;
@@ -127,7 +125,7 @@
     if (isFiioConnected) {
       const fiioName = selectedEarphone.includes('FiiO') ? selectedEarphone : selectedSpeaker;
       try {
-        let rate = await invoke<number>('get_device_sample_rate', { deviceName: fiioName, isAsio: isAsioMode });
+        let rate = await invoke<number>('get_device_sample_rate', { deviceName: fiioName });
         sampleRate = rate;
       } catch (e) {
         console.error("Failed to fetch sample rate:", e);
@@ -135,8 +133,8 @@
     }
   }
 
-  // FiiO 장치 선택이나 ASIO 모드가 바뀔 때마다 실시간 업데이트
-  $: if (isFiioConnected || isAsioMode !== undefined) {
+  // FiiO 장치 선택이 바뀔 때마다 실시간 업데이트
+  $: if (isFiioConnected) {
     fetchSampleRate();
   }
 
@@ -173,7 +171,6 @@
           delay: delayMs,
           lpfHz: lpfHz,
           lpfSlope: lpfSlope,
-          isAsio: isAsioMode,
           headroomDb: headroomDb,
           earphoneTargetSr: earTargetSr,
           speakerTargetSr: spkTargetSr,
@@ -193,7 +190,7 @@
 
   async function fetchDevices() {
     try {
-      devices = await invoke('get_audio_devices', { isAsio: isAsioMode });
+      devices = await invoke('get_audio_devices');
     } catch (e) {
       console.error(e);
       devices = ['Error fetching devices'];
@@ -230,10 +227,6 @@
   $: { if (selectedSpeaker) loadSpeakerProfile(selectedSpeaker); }
 
   onMount(async () => {
-    // 앱 전역 설정 (ASIO 모드)
-    const savedAsio = localStorage.getItem('ws_isAsioMode');
-    if (savedAsio !== null) isAsioMode = savedAsio === 'true';
-
     await fetchDevices();
 
     // 트레이 이벤트 등 리스닝
@@ -459,17 +452,11 @@
 
   $: {
     if (typeof window !== 'undefined' && selectedSource) {
-      localStorage.setItem('ws_isAsioMode', isAsioMode.toString());
       localStorage.setItem('ws_source', selectedSource);
       emit('update-signal-path');
     }
   }
 
-  $: {
-    if (isAsioMode !== undefined && typeof window !== 'undefined') {
-      fetchDevices();
-    }
-  }
 </script>
 
 <div class="relative w-screen h-screen transition-all duration-1000 ease-in-out"
@@ -487,9 +474,9 @@
         <!-- 좌측: 메인 타이틀 및 상태 (드래그 반응) -->
         <div class="pointer-events-none">
           <h1 class="text-2xl font-bold tracking-tight text-white/90">Vesper <span class="text-white/30 font-normal mx-0.5">|</span> Woofer</h1>
-          <div class="flex items-center gap-2 mt-1">
-            <div class="h-2 w-2 rounded-full transition-all duration-500 {isSyncing ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-red-500/80'}"></div>
-            <span class="text-xs font-medium text-white/50 tracking-wider uppercase">
+          <div class="flex items-center gap-1.5 w-fit mt-1 px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+            <div class="h-1.5 w-1.5 rounded-full transition-all duration-500 {isSyncing ? 'bg-apple-blue shadow-[0_0_10px_rgba(10,132,255,0.8)]' : 'bg-white/20'}"></div>
+            <span class="text-[9px] font-bold text-white/50 tracking-widest uppercase mt-px">
               {isSyncing ? 'Active' : 'Standby'}
             </span>
           </div>
@@ -505,18 +492,6 @@
             </button>
             <button on:click={() => getCurrentWindow().minimize()} class="w-3 h-3 rounded-full bg-white/20 hover:bg-yellow-500 transition-colors" aria-label="Minimize"></button>
             <button on:click={() => getCurrentWindow().hide()} class="w-3 h-3 rounded-full bg-white/20 hover:bg-red-500 transition-colors" aria-label="Hide to Tray"></button>
-          </div>
-
-          <!-- macOS 스타일 Segmented Control -->
-          <div class="flex bg-black/40 p-1 rounded-xl shadow-inner border border-white/5 mt-1">
-            <button 
-              class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-300 {!isAsioMode ? 'bg-white/15 text-white shadow-sm' : 'text-white/40 hover:text-white/70'}"
-              on:click={() => isAsioMode = false}
-            >WASAPI</button>
-            <button 
-              class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-300 {isAsioMode ? 'bg-white/15 text-white shadow-sm' : 'text-white/40 hover:text-white/70'}"
-              on:click={() => isAsioMode = true}
-            >ASIO</button>
           </div>
         </div>
       </div>

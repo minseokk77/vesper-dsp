@@ -17,7 +17,6 @@
   }
   let selectedEarphone = 'Earphones';
   let selectedSpeaker = 'Sub Woofer';
-  let isAsioMode = false;
   
   // Source Profile
   let sourceSampleRate = 48000;
@@ -37,7 +36,6 @@
     selectedSource = localStorage.getItem('ws_source') || 'Virtual Audio Cable';
     selectedEarphone = localStorage.getItem('ws_current_earphone') || 'No Earphone';
     selectedSpeaker = localStorage.getItem('ws_current_speaker') || 'No Speaker';
-    isAsioMode = localStorage.getItem('ws_isAsioMode') === 'true';
 
     const h = localStorage.getItem(`ws_headroom_${selectedEarphone}`); 
     if (h) headroomDb = Number(h);
@@ -48,10 +46,10 @@
 
     // 소스(입력 기기) 샘플레이트 및 비트 심도 조회
     if (selectedSource) {
-      invoke<number>('get_device_sample_rate', { deviceName: selectedSource, isAsio: isAsioMode })
+      invoke<number>('get_device_sample_rate', { deviceName: selectedSource })
         .then((sr) => { sourceSampleRate = sr; })
         .catch(() => { sourceSampleRate = 48000; });
-      invoke<string>('get_device_bit_depth', { deviceName: selectedSource, isAsio: isAsioMode })
+      invoke<string>('get_device_bit_depth', { deviceName: selectedSource })
         .then((bd) => { sourceBitDepth = bd; })
         .catch(() => { sourceBitDepth = '알 수 없음'; });
     }
@@ -61,7 +59,7 @@
                      (selectedSpeaker.includes('FiiO') ? selectedSpeaker : '');
     
     if (fiioName) {
-      invoke<number>('get_device_sample_rate', { deviceName: fiioName, isAsio: isAsioMode })
+      invoke<number>('get_device_sample_rate', { deviceName: fiioName })
         .then((sr) => { sampleRate = sr; })
         .catch(() => { sampleRate = 48000; });
     } else {
@@ -69,7 +67,7 @@
     }
 
     if (selectedEarphone && selectedEarphone !== 'No Earphone') {
-      invoke<string>('get_device_bit_depth', { deviceName: selectedEarphone, isAsio: isAsioMode })
+      invoke<string>('get_device_bit_depth', { deviceName: selectedEarphone })
         .then((bd) => { earphoneBitDepth = bd; })
         .catch((err) => { earphoneBitDepth = `오류 (${err})`; });
     } else {
@@ -77,7 +75,7 @@
     }
 
     if (selectedSpeaker && selectedSpeaker !== 'No Speaker') {
-      invoke<string>('get_device_bit_depth', { deviceName: selectedSpeaker, isAsio: isAsioMode })
+      invoke<string>('get_device_bit_depth', { deviceName: selectedSpeaker })
         .then((bd) => { speakerBitDepth = bd; })
         .catch((err) => { speakerBitDepth = `오류 (${err})`; });
     } else {
@@ -201,7 +199,7 @@
         <div class="flex flex-col pt-1">
           <span class="text-sm font-bold text-white/90 flex items-center gap-2">리샘플링 (Sample Rate) <span class="text-purple-400">✨</span></span>
           <span class="text-[11px] text-purple-400 font-medium mt-1">{sourceSampleRate / 1000}kHz ➡️ {sampleRate / 1000}kHz</span>
-          <span class="text-[10px] text-white/40 mt-1">{isAsioMode ? 'ASIO / Exclusive' : 'WASAPI / Shared'}</span>
+          <span class="text-[10px] text-white/40 mt-1">WASAPI / Shared</span>
         </div>
       </div>
 

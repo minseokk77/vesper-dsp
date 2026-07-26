@@ -3,26 +3,25 @@
 mod audio_engine;
 
 #[tauri::command]
-fn get_audio_devices(is_asio: bool) -> Vec<String> {
-    audio_engine::get_available_devices(is_asio)
+fn get_audio_devices() -> Vec<String> {
+    audio_engine::get_available_devices()
 }
 
 #[tauri::command]
-fn get_device_sample_rate(device_name: String, is_asio: bool) -> Result<u32, String> {
-    audio_engine::get_device_sample_rate(&device_name, is_asio)
+fn get_device_sample_rate(device_name: String) -> Result<u32, String> {
+    audio_engine::get_device_sample_rate(&device_name)
 }
 
 #[tauri::command]
-fn get_device_bit_depth(device_name: String, is_asio: bool) -> Result<String, String> {
-    audio_engine::get_device_bit_depth(&device_name, is_asio)
+fn get_device_bit_depth(device_name: String) -> Result<String, String> {
+    audio_engine::get_device_bit_depth(&device_name)
 }
 
 #[tauri::command]
 fn get_device_supported_sample_rates(
     device_name: String,
-    is_asio: bool,
 ) -> Result<Vec<u32>, String> {
-    audio_engine::get_device_supported_sample_rates(&device_name, is_asio)
+    audio_engine::get_device_supported_sample_rates(&device_name)
 }
 
 #[tauri::command]
@@ -34,7 +33,6 @@ fn start_sync(
     delay: u32,
     lpf_hz: f32,
     lpf_slope: u32,
-    is_asio: bool,
     headroom_db: f32,
     earphone_target_sr: Option<u32>,
     speaker_target_sr: Option<u32>,
@@ -49,7 +47,6 @@ fn start_sync(
         delay,
         lpf_hz,
         lpf_slope,
-        is_asio,
         headroom_db,
         earphone_target_sr,
         speaker_target_sr,
@@ -84,7 +81,6 @@ fn apply_earphone_eq_profile(profile: audio_engine::EqProfile) {
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState, Modifiers, Code};
-use tauri_plugin_positioner::{WindowExt, Position};
 
 fn main() {
     tauri::Builder::default()
@@ -219,7 +215,6 @@ fn main() {
                     if let tauri::tray::TrayIconEvent::Click {
                         button: tauri::tray::MouseButton::Left,
                         button_state: tauri::tray::MouseButtonState::Up,
-                        rect,
                         ..
                     } = event
                     {

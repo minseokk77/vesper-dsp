@@ -9,8 +9,8 @@ Rust 기반의 초저지연 오디오 엔진과 Liquid Glass(글래스모피즘)
 ## ✨ 핵심 기능 (Features)
 
 - 🚀 **초저지연 오디오 복제 (Zero-Latency Routing)**
-  - Rust `cpal` 및 `asio-sys` 기반의 오디오 스트리밍을 통해 시스템 오디오를 메인 기기와 우퍼로 동시에 쏴줍니다.
-  - **ASIO & WASAPI 모드 완벽 지원**: Bit-Perfect 전송과 고해상도 샘플레이트(최대 384kHz 등) 호환성을 제공합니다.
+  - Rust `cpal` 기반 WASAPI 오디오 스트리밍을 통해 시스템 오디오를 메인 기기와 우퍼로 동시에 쏴줍니다.
+  - **WASAPI Shared 모드**로 고해상도 샘플레이트(최대 384kHz 등)를 지원합니다.
 
 - 🎛️ **강력한 크로스오버 (Subwoofer Crossover)**
   - 우퍼 스피커로 전달되는 소리 중 불필요한 고음을 잘라내는 **Low Pass Filter (LPF)** 내장.
@@ -48,7 +48,7 @@ Rust 기반의 초저지연 오디오 엔진과 Liquid Glass(글래스모피즘)
 ### **Backend (Desktop Core)**
 - **Framework**: Tauri v2
 - **Language**: Rust
-- **Audio Engine**: `cpal`, `asio-sys` (CPAL 커스텀 드라이버 연동)
+- **Audio Engine**: `cpal` (WASAPI)
 - **Plugins**: 
   - `tauri-plugin-updater` (자동 업데이트)
   - `tauri-plugin-global-shortcut` (단축키 처리)
