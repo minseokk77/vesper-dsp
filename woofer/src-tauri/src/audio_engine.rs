@@ -52,16 +52,7 @@ pub fn update_earphone_eq_profile(profile: EqProfile) {
     }
 }
 
-fn get_host(is_asio: bool) -> cpal::Host {
-    #[cfg(target_os = "windows")]
-    if is_asio {
-        if let Some(host) = cpal::available_hosts()
-            .into_iter()
-            .find(|h| *h == cpal::HostId::Asio)
-        {
-            return cpal::host_from_id(host).unwrap();
-        }
-    }
+fn get_host(_is_asio: bool) -> cpal::Host {
     cpal::default_host()
 }
 

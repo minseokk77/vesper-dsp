@@ -28,12 +28,13 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJEQjIwRUQ4MzI5QjY4RkQKUldUOWFKc3kyQTZ5dlJGQmFJYzdFTVo0MEhJSVhnZXVkUkVhL1JHeVF3VnlyT2VrZFpzRHhlL0UK",
       "endpoints": [
-        "https://raw.githubusercontent.com/MINSEOKK77/vesper-dsp/main/latest.json"
+        "https://raw.githubusercontent.com/MINSEOKK77/vesper-dsp/master/updater.json"
       ]
     }
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "icon": [
       "icons/32x32.png",
