@@ -52,6 +52,7 @@
   $: eqEnabled = autoEqEnabled || typeof window !== 'undefined' && localStorage.getItem('vesper_dsp_eq_manual_enabled') === 'true';
 
   let message = '';
+  let settingsRestored = false;
 
   // Settings & System
   let showSettings = false;
@@ -103,6 +104,7 @@
     localStorage.setItem('vesper_dsp_dsd_filter', dsdFilter);
     localStorage.setItem('vesper_dsp_dsd_gain', dsdGain);
     localStorage.setItem('vesper_dsp_headroom', headroomDb.toString());
+    localStorage.setItem('vesper_dsp_show_clipping', String(showClipping));
     emit('update-signal-path');
   }
 
@@ -299,6 +301,7 @@
     const df = localStorage.getItem('vesper_dsp_dsd_filter'); if (df) dsdFilter = df;
     const dg = localStorage.getItem('vesper_dsp_dsd_gain'); if (dg) dsdGain = dg;
     const h = localStorage.getItem('vesper_dsp_headroom'); if (h) headroomDb = Number(h);
+    const clipping = localStorage.getItem('vesper_dsp_show_clipping'); if (clipping !== null) showClipping = clipping === 'true';
 
     if (output) {
       const opraStr = localStorage.getItem(`vesper_dsp_opra_${output}`);
@@ -311,6 +314,8 @@
         }
       }
     }
+
+    settingsRestored = true;
 
     listen('clipping-detected', () => {
       if (!showClipping) return;
@@ -337,8 +342,8 @@
   });
 
   let restartTimer;
-  $: { 
-    if (source || output || targetRate || strategy || filterType || dsdFilter || dsdGain || headroomDb) {
+  $: {
+    if (settingsRestored) {
       save();
       if (isRunning && typeof window !== 'undefined') {
         clearTimeout(restartTimer);
