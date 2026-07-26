@@ -25,3 +25,11 @@ Tauri와 Rust 기반의 강력한 백엔드를 통해 Windows 운영체제 환�
 2. 설치 완료 후 앱을 실행하면 백그라운드 엔진이 자동으로 켜지며 고음질 오디오 필터링 환경이 구축됩니다.
 
 *(참고: 이 저장소는 Vesper DSP 앱의 설치 파일 배포 및 자동 업데이트(Tauri Updater) 서버로 동작하는 공개 공간입니다. 실제 핵심 오디오 프로세싱 소스코드는 보안 상 비공개 저장소에서 분리 관리되고 있습니다.)*
+
+## 📜 오픈소스 고지 (Open Source Credits)
+
+이 소프트웨어는 전 세계 헤드폰 및 이어폰의 주파수 응답 데이터를 수집하고 이퀄라이제이션(EQ) 프로파일을 제공하는 훌륭한 오픈소스 프로젝트인 **[AutoEq](https://github.com/jaakkopasanen/AutoEq)**의 데이터를 연동하여 사용하고 있습니다.
+
+- **AutoEq** is licensed under the MIT License.
+- Copyright (c) 2018 Jaakko Pasanen
+- 원본 프로젝트 저장소: https://github.com/jaakkopasanen/AutoEq
