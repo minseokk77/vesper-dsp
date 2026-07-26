@@ -1,11 +1,11 @@
 {
-  "version": "0.0.3",
-  "notes": "Vesper DSP v0.0.3: persist audio and DSP settings across app restarts.",
+  "version": "0.0.4",
+  "notes": "Vesper DSP v0.0.4: restore live DSP setting changes while keeping settings across restarts.",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/MINSEOKK77/vesper-dsp/releases/download/v0.0.3/VesperDSP_0.0.3_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlZIUy92TmlPNUQwaWdRc2pTNHRwb1h2c0ZTS0lIT1BwOUQyZ1I1SjJGbjNQMTVBc1hKRkhFS004MWZ5TTc1L1c5VGFWSWswL1ZmQnQrYUxMb1V6Z1FJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MDYxMTU1CWZpbGU6VmVzcGVyRFNQXzAuMC4zX3g2NC1zZXR1cC5leGUKbXRPK3lSNWpQbzV4QUIxOVJMaldCcnhoeUVxMXF3RmNuQVBmMnRudjZPbnQxbnVSS2dnSnQwQTNxVlRQRkRKejFCZy9iRVpDakdUY2lIZWpydWNhQWc9PQo="
+      "url": "https://github.com/MINSEOKK77/vesper-dsp/releases/download/v0.0.4/VesperDSP_0.0.4_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlV3MU5Wa0lMYm1OVUV6TVJpb3F6TTBMVkcya3AvT1VoRFVmTm8rUFhXR0k0YlhHSGVhKzBXMWUxM0ZmZE8wWi8weTRMVjVzY0NycE8vQTJHbGQrWlFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MDYxNjU3CWZpbGU6VmVzcGVyRFNQXzAuMC40X3g2NC1zZXR1cC5leGUKandhOER4Ym1XUUlnTVFEcDFxcm1vVkRvdE9rK0ExS0pJeTZ5dzl5a0ZVUUFCbExGSThoQitOOHFXUHZMWDM4TlJ4bjhIdGVKTTBabkVhUEhUcnpSQlE9PQo="
     }
   },
-  "pub_date": "2026-07-26T10:20:30Z"
+  "pub_date": "2026-07-26T10:27:44Z"
 }
