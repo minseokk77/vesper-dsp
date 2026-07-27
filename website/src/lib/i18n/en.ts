@@ -42,6 +42,29 @@ export const en = {
     copyright: '© 2026 minseokk77',
     repo: 'Private Monorepo',
     dspRel: 'DSP Releases',
-    wooRel: 'Woofer Releases'
+    wooRel: 'Woofer Releases',
+    license: 'License (EULA)'
+  },
+  license: {
+    title: 'Software License Agreement (EULA)',
+    subtitle: 'End User License Agreement',
+    terms: [
+      {
+        title: '1. Ownership and Copyright',
+        content: 'All rights, title, and intellectual property rights in and to Vesper DSP and Vesper Woofer (the "Software") are owned by the developer (minseokk77). The Software is licensed, not sold. (All Rights Reserved)'
+      },
+      {
+        title: '2. Permitted Use',
+        content: 'This Software is provided free of charge for personal, non-commercial use only. Under no circumstances may the Software be resold or redistributed for commercial purposes.'
+      },
+      {
+        title: '3. Restrictions',
+        content: 'You may not reverse engineer, decompile, disassemble, or attempt to extract the source code of the Software. You also may not modify or create derivative works based on the Software in whole or in part.'
+      },
+      {
+        title: '4. Disclaimer of Warranty',
+        content: 'The Software is provided "AS IS", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability or fitness for a particular purpose. The entire risk arising out of use of the Software remains with you.'
+      }
+    ]
   }
 };

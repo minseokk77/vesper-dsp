@@ -52,10 +52,11 @@
       <div class="text-lg font-bold tracking-tighter text-white">Vesper<span class="text-blue-500">.</span></div>
       <span class="text-white/30 text-sm">{i18n.t.footer.copyright}</span>
     </div>
-    <div class="text-[11px] text-white/40 flex gap-6">
+    <div class="text-[11px] text-white/40 flex flex-wrap gap-6 mt-4 md:mt-0 justify-center">
       <a href="https://github.com/minseokk77/vesper" target="_blank" class="hover:text-white transition-colors">{i18n.t.footer.repo}</a>
       <a href="https://github.com/minseokk77/vesper-dsp" target="_blank" class="hover:text-white transition-colors">{i18n.t.footer.dspRel}</a>
       <a href="https://github.com/minseokk77/vesper-woofer" target="_blank" class="hover:text-white transition-colors">{i18n.t.footer.wooRel}</a>
+      <a href="/license" class="hover:text-white transition-colors">{i18n.t.footer.license}</a>
     </div>
   </div>
 </footer>

@@ -42,6 +42,29 @@ export const ko = {
     copyright: '© 2026 minseokk77',
     repo: 'Private Monorepo',
     dspRel: 'DSP Releases',
-    wooRel: 'Woofer Releases'
+    wooRel: 'Woofer Releases',
+    license: '라이선스 (EULA)'
+  },
+  license: {
+    title: '소프트웨어 라이선스 계약 (EULA)',
+    subtitle: '최종 사용자 라이선스 계약 (End User License Agreement)',
+    terms: [
+      {
+        title: '1. 소유권 및 저작권',
+        content: 'Vesper DSP 및 Vesper Woofer(이하 "소프트웨어")에 대한 모든 권리, 소유권 및 지적 재산권은 개발자(minseokk77)에게 있습니다. 본 소프트웨어는 판매되는 것이 아니며, 본 계약에 따라 사용이 허락되는 것입니다. (All Rights Reserved)'
+      },
+      {
+        title: '2. 허가된 사용',
+        content: '본 소프트웨어는 개인적이고 비상업적인 목적으로만 무료로 사용할 수 있습니다. 어떠한 경우에도 소프트웨어를 영리 목적으로 재판매하거나 재배포할 수 없습니다.'
+      },
+      {
+        title: '3. 제한 사항',
+        content: '귀하는 소프트웨어를 리버스 엔지니어링, 디컴파일, 디스어셈블하거나 소프트웨어의 소스 코드를 추출하려고 시도할 수 없습니다. 또한 소프트웨어의 일부 또는 전체를 수정하거나 파생 저작물을 생성할 수 없습니다.'
+      },
+      {
+        title: '4. 보증 부인',
+        content: '본 소프트웨어는 "있는 그대로(AS IS)" 제공되며, 상품성이나 특정 목적에의 적합성을 포함하여 어떠한 명시적 또는 묵시적 보증도 제공하지 않습니다. 소프트웨어 사용으로 인해 발생하는 모든 위험은 전적으로 사용자에게 있습니다.'
+      }
+    ]
   }
 };
