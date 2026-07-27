@@ -18,7 +18,7 @@
 ### 2. Vesper Woofer (`/woofer`)
 Vesper DSP와 완벽한 시너지를 발휘하는 **서브우퍼 및 베이스(Bass) 채널 전용 딜레이/크로스오버 동기화 유틸리티**입니다.
 - **주요 기능:** 메인 스피커(DSP)와의 미세한 위상차/시간차 밀리초 단위 정밀 보정(Delay Sync), 맞춤형 컷오프(Cut-off) 필터 지원.
-- **기술 스택:** Tauri v2, Rust, SvelteKit.
+- **기술 스택:** Tauri v2, Rust, SvelteKit, TailwindCSS.
 
 ## 🚀 로컬 개발 및 빌드 (Development & Build)
 
