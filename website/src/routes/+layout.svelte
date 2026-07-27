@@ -2,6 +2,7 @@
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { onMount } from 'svelte';
+	import { base } from '$app/paths';
 	import { i18n } from '$lib/i18n/index.svelte';
 
 	let { children } = $props();
@@ -22,12 +23,12 @@
 <!-- Navigation -->
 <nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-500 {scrolled ? 'bg-black/70 backdrop-blur-3xl border-b border-white/[0.08] py-4' : 'bg-transparent py-8'}">
   <div class="max-w-6xl mx-auto px-6 flex justify-between items-center">
-    <a href="/" class="text-xl font-semibold tracking-tight text-white hover:opacity-80 transition-opacity">
+    <a href="{base}/" class="text-xl font-semibold tracking-tight text-white hover:opacity-80 transition-opacity">
       Vesper<span class="text-blue-500">.</span>
     </a>
     <div class="flex items-center gap-8 text-xs font-medium text-[#86868b] tracking-wide">
-      <a href="/dsp" class="hover:text-white transition-colors">{i18n.t.nav.dsp}</a>
-      <a href="/woofer" class="hover:text-white transition-colors">{i18n.t.nav.woofer}</a>
+      <a href="{base}/dsp" class="hover:text-white transition-colors">{i18n.t.nav.dsp}</a>
+      <a href="{base}/woofer" class="hover:text-white transition-colors">{i18n.t.nav.woofer}</a>
       <a href="https://github.com/minseokk77/vesper" target="_blank" class="hover:text-white transition-colors">{i18n.t.nav.github}</a>
       
       <!-- Language Toggle -->
@@ -64,7 +65,7 @@
       <a href="https://github.com/minseokk77/vesper" target="_blank" class="hover:text-[#f5f5f7] transition-colors">{i18n.t.footer.repo}</a>
       <a href="https://github.com/minseokk77/vesper-dsp" target="_blank" class="hover:text-[#f5f5f7] transition-colors">{i18n.t.footer.dspRel}</a>
       <a href="https://github.com/minseokk77/vesper-woofer" target="_blank" class="hover:text-[#f5f5f7] transition-colors">{i18n.t.footer.wooRel}</a>
-      <a href="/license" class="hover:text-[#f5f5f7] transition-colors">{i18n.t.footer.license}</a>
+      <a href="{base}/license" class="hover:text-[#f5f5f7] transition-colors">{i18n.t.footer.license}</a>
     </div>
   </div>
 </footer>

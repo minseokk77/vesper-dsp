@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import { i18n } from '$lib/i18n/index.svelte';
 </script>
 
@@ -24,10 +25,10 @@
     </p>
 
     <div class="flex flex-col sm:flex-row items-center gap-6 pt-10">
-      <a href="/dsp" class="px-8 py-3.5 rounded-full bg-[#f5f5f7] text-black font-semibold text-[15px] hover:scale-105 active:scale-95 transition-transform">
+      <a href="{base}/dsp" class="px-8 py-3.5 rounded-full bg-[#f5f5f7] text-black font-semibold text-[15px] hover:scale-105 active:scale-95 transition-transform">
         {i18n.t.hero.btnDsp}
       </a>
-      <a href="/woofer" class="px-8 py-3.5 rounded-full bg-white/[0.08] text-white font-semibold text-[15px] hover:bg-white/[0.12] hover:scale-105 active:scale-95 transition-all">
+      <a href="{base}/woofer" class="px-8 py-3.5 rounded-full bg-white/[0.08] text-white font-semibold text-[15px] hover:bg-white/[0.12] hover:scale-105 active:scale-95 transition-all">
         {i18n.t.hero.btnWoofer}
       </a>
     </div>
@@ -39,7 +40,7 @@
   <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
     
     <!-- DSP Card -->
-    <a href="/dsp" class="group relative rounded-[32px] bg-white/[0.02] border border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-[60px] p-10 overflow-hidden hover:scale-[1.02] transition-all duration-500 block hover:bg-white/[0.04]">
+    <a href="{base}/dsp" class="group relative rounded-[32px] bg-white/[0.02] border border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-[60px] p-10 overflow-hidden hover:scale-[1.02] transition-all duration-500 block hover:bg-white/[0.04]">
       <div class="absolute inset-0 bg-gradient-to-br from-white/[0.08] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
       <div class="relative z-10 flex flex-col h-full">
         <h2 class="text-3xl font-semibold tracking-tight text-[#f5f5f7] mb-3">{i18n.t.home.dspTitle}</h2>
@@ -56,7 +57,7 @@
     </a>
 
     <!-- Woofer Card -->
-    <a href="/woofer" class="group relative rounded-[32px] bg-white/[0.02] border border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-[60px] p-10 overflow-hidden hover:scale-[1.02] transition-all duration-500 block hover:bg-white/[0.04]">
+    <a href="{base}/woofer" class="group relative rounded-[32px] bg-white/[0.02] border border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-[60px] p-10 overflow-hidden hover:scale-[1.02] transition-all duration-500 block hover:bg-white/[0.04]">
       <div class="absolute inset-0 bg-gradient-to-br from-white/[0.08] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
       <div class="relative z-10 flex flex-col h-full">
         <h2 class="text-3xl font-semibold tracking-tight text-[#f5f5f7] mb-3">{i18n.t.home.wooferTitle}</h2>
