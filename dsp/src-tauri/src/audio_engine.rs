@@ -69,11 +69,27 @@ pub fn get_available_devices(is_asio: bool) -> Vec<String> {
     device_names
 }
 
-pub fn get_input_devices(is_asio: bool) -> Vec<String> {
+fn is_virtual_cable_device(name: &str) -> bool {
+    name.to_lowercase().contains("vb-audio")
+}
+
+pub fn get_source_devices(is_asio: bool) -> Vec<String> {
     let host = get_host(is_asio);
-    host.input_devices()
-        .map(|devices| devices.map(|device| device.to_string()).collect())
-        .unwrap_or_default()
+    let mut device_names = host
+        .input_devices()
+        .map(|devices| devices.map(|device| device.to_string()).collect::<Vec<_>>())
+        .unwrap_or_default();
+
+    if let Ok(devices) = host.output_devices() {
+        for device in devices {
+            let name = device.to_string();
+            if is_virtual_cable_device(&name) && !device_names.contains(&name) {
+                device_names.push(name);
+            }
+        }
+    }
+
+    device_names
 }
 
 pub fn get_output_devices(is_asio: bool) -> Vec<String> {
@@ -107,6 +123,17 @@ fn find_input_device(host: &cpal::Host, name: &str) -> Option<cpal::Device> {
     host.input_devices()
         .ok()?
         .find(|device| device.to_string() == name)
+}
+
+fn find_source_device(host: &cpal::Host, name: &str) -> Option<(cpal::Device, bool)> {
+    if let Some(device) = find_input_device(host, name) {
+        return Some((device, true));
+    }
+
+    host.output_devices().ok()?.find_map(|device| {
+        let device_name = device.to_string();
+        (device_name == name && is_virtual_cable_device(&device_name)).then_some((device, false))
+    })
 }
 
 fn find_output_device(host: &cpal::Host, name: &str) -> Option<cpal::Device> {
@@ -357,11 +384,15 @@ pub fn start_dsp_engine(
     std::thread::sleep(std::time::Duration::from_millis(75));
 
     let host = get_host(is_asio);
-    let source_device = find_input_device(&host, source_name)
-        .ok_or("Audio source input device not found")?;
+    let (source_device, source_is_input) =
+        find_source_device(&host, source_name).ok_or("Audio source device not found")?;
     let output_device = find_output_device(&host, output_name)
         .ok_or("Output device not found")?;
-    let source_config = find_best_input_config(&source_device)?;
+    let source_config = if source_is_input {
+        find_best_input_config(&source_device)?
+    } else {
+        find_best_output_config(&source_device)?
+    };
     let output_config =
         find_output_config_with_target(&output_device, target_sample_rate, output_sample_format)?;
 

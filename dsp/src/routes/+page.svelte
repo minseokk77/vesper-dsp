@@ -15,7 +15,7 @@
   let isRunning = false;
   let isStarting = false;
   let isMuted = false;
-  let inputDevices: string[] = [];
+  let sourceDevices: string[] = [];
   let outputDevices: string[] = [];
   
   let source = '';
@@ -116,18 +116,18 @@
 
   async function fetchDevices() {
     try {
-      [inputDevices, outputDevices] = await Promise.all([
-        invoke<string[]>('get_input_devices', { isAsio: false }),
+      [sourceDevices, outputDevices] = await Promise.all([
+        invoke<string[]>('get_source_devices', { isAsio: false }),
         invoke<string[]>('get_output_devices', { isAsio: false })
       ]);
     } catch (e) {
       console.error(e);
-      inputDevices = ['장치 오류'];
+      sourceDevices = ['장치 오류'];
       outputDevices = ['장치 오류'];
     }
     const savedSource = localStorage.getItem('vesper_dsp_source') || '';
     const savedOutput = localStorage.getItem('vesper_dsp_output') || '';
-    source = inputDevices.includes(savedSource) ? savedSource : (inputDevices.find(d => d.toLowerCase().includes('cable')) || inputDevices[0] || '');
+    source = sourceDevices.includes(savedSource) ? savedSource : (sourceDevices.find(d => d.toLowerCase().includes('hi-fi cable input')) || sourceDevices.find(d => d.toLowerCase().includes('cable')) || sourceDevices[0] || '');
     output = outputDevices.includes(savedOutput) ? savedOutput : (outputDevices.find(d => !d.toLowerCase().includes('cable')) || outputDevices[0] || '');
   }
 
@@ -436,7 +436,7 @@
         <div class="flex flex-col gap-3">
           <div class="w-full flex flex-col gap-1.5 relative group">
             <label class="text-[10px] font-semibold tracking-widest text-white/50 uppercase pl-1">Input Source</label>
-            <CustomSelect bind:value={source} options={inputDevices.map(d => ({ value: d, label: d }))} bind:isOpen={sourceMenuOpen} />
+            <CustomSelect bind:value={source} options={sourceDevices.map(d => ({ value: d, label: d }))} bind:isOpen={sourceMenuOpen} />
           </div>
           <div class="w-full flex flex-col gap-1.5 relative group">
             <label class="text-[10px] font-semibold tracking-widest text-white/50 uppercase pl-1">Output Device</label>
