@@ -39,3 +39,10 @@ Tauri와 Rust 기반의 강력한 백엔드를 통해 Windows 운영체제 환�
 - **Spinorama** is licensed under the MIT License.
 - Copyright (c) 2020 Pierre Aubert
 - 원본 프로젝트 저장소: https://github.com/pierreaubert/spinorama
+
+## 📄 라이선스 (License)
+
+**Vesper DSP** is licensed under the MIT License.
+Copyright (c) 2026 Vesper (minseokk77)
+
+자세한 내용은 [LICENSE](./LICENSE) 파일을 참고하시기 바랍니다.
