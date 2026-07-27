@@ -1,11 +1,11 @@
 {
-  "version": "0.0.8",
-  "notes": "Vesper DSP v0.0.8: stabilizes WASAPI stream restarts, retries transient busy audio clients, and separates input sources from output devices.",
-  "pub_date": "2026-07-27T00:35:03Z",
+  "version": "0.0.9",
+  "notes": "Vesper DSP v0.0.9: supports selecting VB-Audio Hi-Fi Cable Input directly as a WASAPI loopback source while keeping physical output devices out of the source list.",
+  "pub_date": "2026-07-27T01:12:48Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.8/VesperDSP_0.0.8_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmYzaUlCVVBVbHFmcmRmakhqWUZTQzl1Uk53TGc1bmFmeWNramZGSVh1US81aGtpTDluN1RLdU1kZENtait3YVJON09FQzhPUmtkSVBsQ08xeFNGemdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MTEyMzU3CWZpbGU6VmVzcGVyRFNQXzAuMC44X3g2NC1zZXR1cC5leGUKUWRUcTVjemdOMWlvd1ltS2pTYXNGS09JMW5UWlJ5U1hZdlFkSi9iVThOWEFkUkZtN2cyVnNBYi90YWFQR2NLVERhcHIrdU5ML2hjd0thUHh1RXFERGc9PQo="
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.9/VesperDSP_0.0.9_x64-setup.exe",
+      "signature": "ZFc1MGNuVnpkR1ZrSUdOdmJXMWxiblE2SUhOcFoyNWhkSFZ5WlNCbWNtOXRJSFJoZFhKcElITmxZM0psZENCclpYa0tVbFZVT1dGS2Mza3lRVFo1ZGxGdlJIRkpUa3BaZVVKU1psTkZhWFIxS3k5MFFXdGhNRlpOUjJSU1IyNHJWMDUyWVhBNGMyZE9Wak5TUzNKSFVqazVha2hHYkRoWEswWXlZMll5YVc1dVUybE1abm80YTNaMGRHRktkSGhNWjJwRWFGRlJQUXAwY25WemRHVmtJR052YlcxbGJuUTZJSFJwYldWemRHRnRjRG94TnpnMU1URTBOek14Q1dacGJHVTZWbVZ6Y0dWeVJGTlFYekF1TUM0NVgzZzJOQzF6WlhSMWNDNWxlR1VLSzFkaVkybDRXa294ZVhkTmIyZHBlRFJxWW5WTk0xcHdSRkZXVEVKU2JuRnFaMmRtTkRBeGJWaGxVazVGYmt4Rk1EUnNiekJxUzBnek0wNHZRa1F5Tkd3NWFVaExjWFp5UTNOc1NYSnlhalZYTnpkTlFtYzlQUW89"
     }
   }
 }
