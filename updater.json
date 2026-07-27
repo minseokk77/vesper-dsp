@@ -1,11 +1,11 @@
 {
-  "version": "0.0.9",
-  "notes": "Vesper DSP v0.0.9: supports selecting VB-Audio Hi-Fi Cable Input directly as a WASAPI loopback source while keeping physical output devices out of the source list.",
-  "pub_date": "2026-07-27T01:12:48Z",
+  "version": "0.0.10",
+  "notes": "Vesper DSP v0.0.10: saves the locked window position, restores it on launch, and returns the window to that position if it is moved while locked.",
+  "pub_date": "2026-07-27T01:35:00Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.9/VesperDSP_0.0.9_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlFvRHFJTkpZeUJSZlNFaXR1Ky90QWthMFZNR2RSR24rV052YXA4c2dOVjNSS3JHUjk5akhGbDhXK0YyY2YyaW5uU2lMZno4a3Z0dGFKdHhMZ2pEaFFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MTE0NzMxCWZpbGU6VmVzcGVyRFNQXzAuMC45X3g2NC1zZXR1cC5leGUKK1diY2l4WkoxeXdNb2dpeDRqYnVNM1pwRFFWTEJSbnFqZ2dmNDAxbVhlUk5FbkxFMDRsbzBqS0gzM04vQkQyNGw5aUhLcXZyQ3NsSXJyajVXNzdNQmc9PQo="
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.10/VesperDSP_0.0.10_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlU2SVE5MFF5K0VkMzJtSU91YzFRRDQ5VmFrQ3ArUlI0RE1qSDNRdGxtK0VJTGQ2V0hQWkdzVFJkQjNUQVNMeElHaDhOdExYei8rMnBnbXRiMnlYc3dnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MTE1OTg5CWZpbGU6VmVzcGVyRFNQXzAuMC4xMF94NjQtc2V0dXAuZXhlCjR6TEFiUVQyY0JmdUdnU0huVFB2cjRHYTRad0ZhL2dtVFZBRER5b2IyUnpReGVuUEI4M29kVm5GWU1xV05mQmNKT3NYMGxscmNTNkZUc2NwUGhkTENBPT0K"
     }
   }
 }
