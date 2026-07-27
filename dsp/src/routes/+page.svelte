@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { invoke } from '@tauri-apps/api/core';
   import { emit, listen } from '@tauri-apps/api/event';
-  import { getCurrentWindow } from '@tauri-apps/api/window';
+  import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window';
   import { getVersion } from '@tauri-apps/api/app';
   import { relaunch } from '@tauri-apps/plugin-process';
   import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
@@ -67,6 +67,11 @@
   let hasUpdate = false;
   let newVersion = '';
   let updateBody = '';
+  type WindowPosition = { x: number; y: number };
+  const windowLockPositionKey = 'vesper_dsp_window_lock_position';
+  let lockedWindowPosition: WindowPosition | null = null;
+  let isRestoringLockedPosition = false;
+  let unlistenWindowMoved: (() => void) | undefined;
   const supportedRates = [44100, 48000, 88200, 96000, 176400, 192000, 352800, 384000, 705600, 768000];
 
   const rateOptions = () => [
@@ -287,9 +292,51 @@
     }
   }
 
-  function toggleWindowLock() {
-    isWindowLocked = !isWindowLocked;
-    localStorage.setItem('vesper_dsp_window_locked', String(isWindowLocked));
+  function loadLockedWindowPosition(): WindowPosition | null {
+    const stored = localStorage.getItem(windowLockPositionKey);
+    if (!stored) return null;
+
+    try {
+      const position = JSON.parse(stored) as WindowPosition;
+      return Number.isFinite(position.x) && Number.isFinite(position.y) ? position : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function saveLockedWindowPosition() {
+    const position = await getCurrentWindow().outerPosition();
+    lockedWindowPosition = { x: position.x, y: position.y };
+    localStorage.setItem(windowLockPositionKey, JSON.stringify(lockedWindowPosition));
+  }
+
+  async function restoreLockedWindowPosition() {
+    if (!isWindowLocked || !lockedWindowPosition || isRestoringLockedPosition) return;
+
+    isRestoringLockedPosition = true;
+    try {
+      await getCurrentWindow().setPosition(new PhysicalPosition(lockedWindowPosition.x, lockedWindowPosition.y));
+    } finally {
+      setTimeout(() => { isRestoringLockedPosition = false; }, 0);
+    }
+  }
+
+  async function toggleWindowLock() {
+    if (isWindowLocked) {
+      isWindowLocked = false;
+      lockedWindowPosition = null;
+      localStorage.removeItem('vesper_dsp_window_locked');
+      localStorage.removeItem(windowLockPositionKey);
+      return;
+    }
+
+    try {
+      await saveLockedWindowPosition();
+      isWindowLocked = true;
+      localStorage.setItem('vesper_dsp_window_locked', 'true');
+    } catch (e) {
+      console.error('Failed to lock window position:', e);
+    }
   }
 
   async function checkForUpdates() {
@@ -341,6 +388,22 @@
   onMount(async () => {
     await fetchDevices();
     currentVersion = await getVersion();
+
+    if (isWindowLocked) {
+      lockedWindowPosition = loadLockedWindowPosition();
+      if (lockedWindowPosition) {
+        await restoreLockedWindowPosition();
+      } else {
+        await saveLockedWindowPosition();
+      }
+    }
+
+    unlistenWindowMoved = await getCurrentWindow().onMoved(({ payload }) => {
+      if (!isWindowLocked || !lockedWindowPosition || isRestoringLockedPosition) return;
+      if (payload.x !== lockedWindowPosition.x || payload.y !== lockedWindowPosition.y) {
+        void restoreLockedWindowPosition();
+      }
+    });
     
     const t = localStorage.getItem('vesper_dsp_target_rate'); if (t) targetRate = Number(t);
     const st = localStorage.getItem('vesper_dsp_strategy'); if (st) strategy = st;
@@ -386,6 +449,10 @@
         signalModalHeight = Math.min(e.data.height + 60, 600);
       }
     });
+  });
+
+  onDestroy(() => {
+    unlistenWindowMoved?.();
   });
 
   let restartTimer: ReturnType<typeof setTimeout>;
