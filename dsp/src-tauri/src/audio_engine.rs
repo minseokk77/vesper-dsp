@@ -17,6 +17,7 @@ use tauri::Emitter;
 static IS_RUNNING: Lazy<Arc<AtomicBool>> = Lazy::new(|| Arc::new(AtomicBool::new(false)));
 static LAST_CLIP_TIME: Lazy<AtomicI64> = Lazy::new(|| AtomicI64::new(0));
 static STREAMS: Lazy<Mutex<Vec<cpal::Stream>>> = Lazy::new(|| Mutex::new(Vec::new()));
+static ENGINE_TRANSITION: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
 pub static OUTPUT_MUTED: AtomicBool = AtomicBool::new(false);
 pub static OUTPUT_EQ_PROFILE: Lazy<Arc<Mutex<EqProfile>>> =
@@ -68,6 +69,20 @@ pub fn get_available_devices(is_asio: bool) -> Vec<String> {
     device_names
 }
 
+pub fn get_input_devices(is_asio: bool) -> Vec<String> {
+    let host = get_host(is_asio);
+    host.input_devices()
+        .map(|devices| devices.map(|device| device.to_string()).collect())
+        .unwrap_or_default()
+}
+
+pub fn get_output_devices(is_asio: bool) -> Vec<String> {
+    let host = get_host(is_asio);
+    host.output_devices()
+        .map(|devices| devices.map(|device| device.to_string()).collect())
+        .unwrap_or_default()
+}
+
 fn find_device(host: &cpal::Host, name: &str) -> Option<(cpal::Device, bool)> {
     if let Ok(devices) = host.input_devices() {
         for d in devices {
@@ -86,6 +101,18 @@ fn find_device(host: &cpal::Host, name: &str) -> Option<(cpal::Device, bool)> {
         }
     }
     None
+}
+
+fn find_input_device(host: &cpal::Host, name: &str) -> Option<cpal::Device> {
+    host.input_devices()
+        .ok()?
+        .find(|device| device.to_string() == name)
+}
+
+fn find_output_device(host: &cpal::Host, name: &str) -> Option<cpal::Device> {
+    host.output_devices()
+        .ok()?
+        .find(|device| device.to_string() == name)
 }
 
 fn find_best_input_config(device: &cpal::Device) -> Result<cpal::SupportedStreamConfig, String> {
@@ -323,18 +350,18 @@ pub fn start_dsp_engine(
     filter_type: &str,
     output_sample_format: Option<&str>,
 ) -> Result<(), String> {
-    stop_dsp_engine()?;
-    IS_RUNNING.store(true, Ordering::SeqCst);
+    let _transition = ENGINE_TRANSITION
+        .lock()
+        .map_err(|_| "Audio engine transition lock poisoned")?;
+    stop_dsp_engine_inner()?;
+    std::thread::sleep(std::time::Duration::from_millis(75));
 
     let host = get_host(is_asio);
-    let (source_device, source_is_input) =
-        find_device(&host, source_name).ok_or("Audio source device not found")?;
-    let (output_device, _) = find_device(&host, output_name).ok_or("Output device not found")?;
-    let source_config = if source_is_input {
-        find_best_input_config(&source_device)?
-    } else {
-        find_best_output_config(&source_device)?
-    };
+    let source_device = find_input_device(&host, source_name)
+        .ok_or("Audio source input device not found")?;
+    let output_device = find_output_device(&host, output_name)
+        .ok_or("Output device not found")?;
+    let source_config = find_best_input_config(&source_device)?;
     let output_config =
         find_output_config_with_target(&output_device, target_sample_rate, output_sample_format)?;
 
@@ -380,6 +407,7 @@ pub fn start_dsp_engine(
         )
     };
 
+    IS_RUNNING.store(true, Ordering::SeqCst);
     let running = IS_RUNNING.clone();
     std::thread::spawn(move || {
         let mut channels = vec![vec![0.0; chunk_size]; input_channels];
@@ -562,8 +590,15 @@ pub fn start_dsp_engine(
         cpal::SampleFormat::I24 => build_output!(cpal::I24, f64_to_i24),
         cpal::SampleFormat::I32 => build_output!(i32, f64_to_i32),
         cpal::SampleFormat::U16 => build_output!(u16, f64_to_u16),
-        format => return Err(format!("Unsupported output format: {format:?}")),
-    }?;
+        format => Err(format!("Unsupported output format: {format:?}")),
+    };
+    let output_stream = match output_stream {
+        Ok(stream) => stream,
+        Err(error) => {
+            IS_RUNNING.store(false, Ordering::SeqCst);
+            return Err(error);
+        }
+    };
 
     macro_rules! build_input {
         ($sample:ty, $convert:expr) => {{
@@ -588,11 +623,24 @@ pub fn start_dsp_engine(
         cpal::SampleFormat::I24 => build_input!(cpal::I24, i24_to_f64),
         cpal::SampleFormat::I32 => build_input!(i32, i32_to_f64),
         cpal::SampleFormat::U16 => build_input!(u16, u16_to_f64),
-        format => return Err(format!("Unsupported input format: {format:?}")),
-    }?;
+        format => Err(format!("Unsupported input format: {format:?}")),
+    };
+    let input_stream = match input_stream {
+        Ok(stream) => stream,
+        Err(error) => {
+            IS_RUNNING.store(false, Ordering::SeqCst);
+            return Err(error);
+        }
+    };
 
-    input_stream.play().map_err(|error| error.to_string())?;
-    output_stream.play().map_err(|error| error.to_string())?;
+    input_stream.play().map_err(|error| {
+        IS_RUNNING.store(false, Ordering::SeqCst);
+        error.to_string()
+    })?;
+    output_stream.play().map_err(|error| {
+        IS_RUNNING.store(false, Ordering::SeqCst);
+        error.to_string()
+    })?;
     let mut streams = STREAMS.lock().map_err(|_| "Audio stream lock poisoned")?;
     streams.push(input_stream);
     streams.push(output_stream);
@@ -601,8 +649,18 @@ pub fn start_dsp_engine(
 }
 
 pub fn stop_dsp_engine() -> Result<(), String> {
+    let _transition = ENGINE_TRANSITION
+        .lock()
+        .map_err(|_| "Audio engine transition lock poisoned")?;
+    stop_dsp_engine_inner()
+}
+
+fn stop_dsp_engine_inner() -> Result<(), String> {
     IS_RUNNING.store(false, Ordering::SeqCst);
     let mut streams = STREAMS.lock().map_err(|_| "Audio stream lock poisoned")?;
+    for stream in streams.iter() {
+        let _ = stream.pause();
+    }
     streams.clear();
     Ok(())
 }

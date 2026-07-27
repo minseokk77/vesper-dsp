@@ -11,6 +11,15 @@ fn get_audio_devices(is_asio: bool) -> Vec<String> {
     audio_engine::get_available_devices(is_asio)
 }
 
+#[tauri::command]
+fn get_input_devices(is_asio: bool) -> Vec<String> {
+    audio_engine::get_input_devices(is_asio)
+}
+
+#[tauri::command]
+fn get_output_devices(is_asio: bool) -> Vec<String> {
+    audio_engine::get_output_devices(is_asio)
+}
 
 
 #[tauri::command]
@@ -181,6 +190,8 @@ fn main() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             get_audio_devices,
+            get_input_devices,
+            get_output_devices,
             get_device_sample_rate,
             get_device_bit_depth,
             get_device_supported_bit_depths,

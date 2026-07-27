@@ -13,8 +13,10 @@
   // 상태 변수
   let isWindowLocked = typeof window !== 'undefined' ? localStorage.getItem('vesper_dsp_window_locked') === 'true' : false;
   let isRunning = false;
+  let isStarting = false;
   let isMuted = false;
-  let devices: string[] = [];
+  let inputDevices: string[] = [];
+  let outputDevices: string[] = [];
   
   let source = '';
   let output = '';
@@ -114,20 +116,25 @@
 
   async function fetchDevices() {
     try {
-      devices = await invoke('get_audio_devices', { isAsio: false });
+      [inputDevices, outputDevices] = await Promise.all([
+        invoke<string[]>('get_input_devices', { isAsio: false }),
+        invoke<string[]>('get_output_devices', { isAsio: false })
+      ]);
     } catch (e) {
       console.error(e);
-      devices = ['장치 오류'];
+      inputDevices = ['장치 오류'];
+      outputDevices = ['장치 오류'];
     }
     const savedSource = localStorage.getItem('vesper_dsp_source') || '';
     const savedOutput = localStorage.getItem('vesper_dsp_output') || '';
-    source = devices.includes(savedSource) ? savedSource : (devices.find(d => d.toLowerCase().includes('cable')) || devices[0] || '');
-    output = devices.includes(savedOutput) ? savedOutput : (devices.find(d => !d.toLowerCase().includes('cable')) || devices[1] || '');
+    source = inputDevices.includes(savedSource) ? savedSource : (inputDevices.find(d => d.toLowerCase().includes('cable')) || inputDevices[0] || '');
+    output = outputDevices.includes(savedOutput) ? savedOutput : (outputDevices.find(d => !d.toLowerCase().includes('cable')) || outputDevices[0] || '');
   }
 
-  function toggleDsp() {
+  async function toggleDsp() {
+    if (isStarting) return;
     if (isRunning) {
-      invoke('stop_dsp');
+      await invoke('stop_dsp');
       isRunning = false;
       localStorage.setItem('vesper_dsp_is_running', 'false');
     } else {
@@ -135,22 +142,35 @@
     }
   }
 
-  async function startDsp() {
+  async function startDsp(restart = false) {
+    if (isStarting || (!restart && isRunning)) return;
+    isStarting = true;
     try {
-      await invoke('start_dsp', {
-        source,
-        output,
-        isAsio: false, // matches is_asio in rust due to Tauri's camelCase conversion
-        headroomDb,
-        targetSampleRate: targetRate,
-        filterType,
-        outputSampleFormat: null
-      });
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          await invoke('start_dsp', {
+            source,
+            output,
+            isAsio: false, // matches is_asio in rust due to Tauri's camelCase conversion
+            headroomDb,
+            targetSampleRate: targetRate,
+            filterType,
+            outputSampleFormat: null
+          });
+          break;
+        } catch (error) {
+          const isBusy = String(error).includes('-2147024726') || String(error).includes('리소스가 사용 중');
+          if (!isBusy || attempt === 2) throw error;
+          await new Promise((resolve) => setTimeout(resolve, 150));
+        }
+      }
       isRunning = true;
       localStorage.setItem('vesper_dsp_is_running', 'true');
     } catch (e) {
       alert("백엔드 오류: " + e);
       isRunning = false;
+    } finally {
+      isStarting = false;
     }
   }
 
@@ -375,7 +395,7 @@
       if (isRunning && typeof window !== 'undefined') {
         clearTimeout(restartTimer);
         restartTimer = setTimeout(() => {
-          startDsp();
+          startDsp(true);
         }, 500); // 0.5초 디바운스 (슬라이더 조작 시 뚝뚝 끊김 방지)
       }
     } 
@@ -416,11 +436,11 @@
         <div class="flex flex-col gap-3">
           <div class="w-full flex flex-col gap-1.5 relative group">
             <label class="text-[10px] font-semibold tracking-widest text-white/50 uppercase pl-1">Input Source</label>
-            <CustomSelect bind:value={source} options={devices.map(d => ({ value: d, label: d }))} bind:isOpen={sourceMenuOpen} />
+            <CustomSelect bind:value={source} options={inputDevices.map(d => ({ value: d, label: d }))} bind:isOpen={sourceMenuOpen} />
           </div>
           <div class="w-full flex flex-col gap-1.5 relative group">
             <label class="text-[10px] font-semibold tracking-widest text-white/50 uppercase pl-1">Output Device</label>
-            <CustomSelect bind:value={output} options={devices.map(d => ({ value: d, label: d }))} bind:isOpen={outputMenuOpen} />
+            <CustomSelect bind:value={output} options={outputDevices.map(d => ({ value: d, label: d }))} bind:isOpen={outputMenuOpen} />
           </div>
         </div>
 
@@ -534,6 +554,7 @@
                    ? 'bg-apple-blue/20 text-apple-blue border border-apple-blue/30 hover:bg-apple-blue/30 shadow-[0_0_20px_rgba(10,132,255,0.15)]' 
                    : 'bg-white text-black hover:bg-gray-200'}"
           on:click={toggleDsp}
+          disabled={isStarting}
         >
           {isRunning ? 'Stop Engine' : 'Engage DSP'}
         </button>
