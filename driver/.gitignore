@@ -1,0 +1,5 @@
+vendor/simpleaudiosample/Source/**/x64/
+vendor/simpleaudiosample/Source/Main/VesperVirtualAudio.inx
+vendor/simpleaudiosample/Source/Main/SimpleAudioSample.inf
+vendor/simpleaudiosample/Source/Main/VesperVirtualAudio.inf
+vendor/simpleaudiosample/Package/x64/

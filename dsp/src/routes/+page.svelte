@@ -63,6 +63,7 @@
   // Settings & System
   let showSettings = false;
   let showLicense = false;
+  let showThirdPartyLicense = false;
   let autoStartEnabled = false;
   let currentVersion = '';
   let updateStatus = '업데이트 확인';
@@ -831,6 +832,35 @@
             Data sources include Audio Science Review, ErinsAudioCorner, and others.
           </div>
         </div>
+
+        <button 
+          on:click={() => showThirdPartyLicense = !showThirdPartyLicense}
+          class="w-full p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-colors flex items-center justify-between group"
+        >
+          <h3 class="text-sm font-bold text-white/90">제3자 오픈소스 라이선스 보기</h3>
+          <svg class="w-4 h-4 text-white/50 group-hover:text-white transition-colors transform {showThirdPartyLicense ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+
+        {#if showThirdPartyLicense}
+        <div class="p-4 rounded-xl bg-black/40 border border-white/5 text-[10px] text-white/40 font-mono leading-relaxed whitespace-pre-wrap">
+Vesper DSP incorporates the following third-party open source libraries and frameworks:
+
+- Tauri (MIT / Apache-2.0)
+- Svelte & SvelteKit (MIT)
+- Vite (MIT)
+- cpal (Apache-2.0)
+- rubato (MIT)
+- biquad (MIT / Apache-2.0)
+- ringbuf (MIT / Apache-2.0)
+- tokio (MIT)
+- serde (MIT / Apache-2.0)
+
+For libraries licensed under MIT License:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+        </div>
+        {/if}
       </div>
     </div>
   </div>

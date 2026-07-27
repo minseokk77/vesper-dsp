@@ -1,10 +1,10 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "VesperDSP",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "identifier": "com.vesper.dsp",
   "build": {
-    "beforeDevCommand": "",
+    "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:5173",
     "beforeBuildCommand": "pnpm build",
     "frontendDist": "../build"
@@ -17,7 +17,8 @@
         "height": 850,
         "resizable": false,
         "decorations": false,
-        "transparent": true
+        "transparent": true,
+        "visible": false
       }
     ],
     "security": {
