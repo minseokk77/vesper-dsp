@@ -45,14 +45,17 @@
   let autoEqEnabled = false;
   let autoEqQuery = '';
   let autoEqLoading = false;
-  interface AutoEqResult { vendor: string; product: string; }
+  let autoEqMode: 'opra' | 'spinorama' = 'opra';
+  interface AutoEqResult { vendor: string; product: string; mode: 'opra' | 'spinorama'; }
   interface AutoEqTreeNode { path: string; }
+
+  import spinoramaData from '$lib/spinorama_index.json';
 
   let autoEqResults: AutoEqResult[] = [];
   let autoEqTree: AutoEqTreeNode[] = [];
   let autoEqProduct = '';
   
-  $: eqEnabled = autoEqEnabled || typeof window !== 'undefined' && localStorage.getItem('vesper_dsp_eq_manual_enabled') === 'true';
+  $: eqEnabled = autoEqEnabled;
 
   let message = '';
   let settingsRestored = false;
@@ -132,7 +135,7 @@
     }
     const savedSource = localStorage.getItem('vesper_dsp_source') || '';
     const savedOutput = localStorage.getItem('vesper_dsp_output') || '';
-    source = sourceDevices.includes(savedSource) ? savedSource : (sourceDevices.find(d => d.toLowerCase().includes('hi-fi cable input')) || sourceDevices.find(d => d.toLowerCase().includes('cable')) || sourceDevices[0] || '');
+    source = sourceDevices.includes(savedSource) ? savedSource : (sourceDevices.find(d => d.toLowerCase().includes('cable input') || d.toLowerCase().includes('cable')) || sourceDevices[0] || '');
     output = outputDevices.includes(savedOutput) ? savedOutput : (outputDevices.find(d => !d.toLowerCase().includes('cable')) || outputDevices[0] || '');
   }
 
@@ -171,6 +174,10 @@
       }
       isRunning = true;
       localStorage.setItem('vesper_dsp_is_running', 'true');
+      // 실제 스트림 파라미터를 localStorage에 저장 (시그널 패스 iframe에서 접근용)
+      invoke<any>('get_stream_info').then((info) => {
+        if (info) localStorage.setItem('vesper_dsp_stream_info', JSON.stringify(info));
+      }).catch(() => {});
     } catch (e) {
       alert("백엔드 오류: " + e);
       isRunning = false;
@@ -201,50 +208,79 @@
   }
 
   async function searchAutoEq() {
-    await loadAutoEqIndex();
     const query = autoEqQuery.trim().toLowerCase();
     if (!query) {
       autoEqResults = [];
       return;
     }
-    const results: { vendor: string; product: string }[] = [];
+    
+    await loadAutoEqIndex();
+    const results: AutoEqResult[] = [];
+    
+    for (const name of (spinoramaData as string[])) {
+      if (name.toLowerCase().includes(query)) {
+        results.push({ vendor: 'Spinorama', product: name, mode: 'spinorama' });
+      }
+    }
+
     for (const entry of autoEqTree) {
       const parts = entry.path.split('/');
       if (parts.length > 5 && parts[3] === 'products') {
         const vendor = parts[2];
         const product = parts[4];
         if (`${vendor} ${product}`.toLowerCase().includes(query) && !results.some(r => r.vendor === vendor && r.product === product)) {
-          results.push({ vendor, product });
+          results.push({ vendor, product, mode: 'opra' });
         }
       }
     }
-    autoEqResults = results.slice(0, 30);
+    autoEqResults = results.slice(0, 50);
   }
 
-  async function selectAutoEq(vendor: string, product: string) {
-    const profilePath = autoEqTree.find(e => e.path.includes(`vendors/${vendor}/products/${product}/eq/`) && e.path.endsWith('info.json'));
-    if (!profilePath) {
-      message = 'EQ 프로필을 찾지 못했습니다.';
-      return;
-    }
+  async function selectAutoEq(result: AutoEqResult) {
     autoEqLoading = true;
+    const { vendor, product, mode } = result;
+    autoEqMode = mode;
     try {
-      const response = await fetch(`https://raw.githubusercontent.com/opra-project/OPRA/main/${profilePath.path}`);
-      if (!response.ok) throw new Error(`AutoEQ request failed`);
-      const data = await response.json();
+      let bands: any[] = [];
+      let preamp = 0;
+
+      if (autoEqMode === 'spinorama') {
+        const response = await fetch(`https://raw.githubusercontent.com/pierreaubert/spinorama/master/datas/eq/${encodeURIComponent(product)}/iir-autoeq.txt`);
+        if (!response.ok) throw new Error(`Spinorama request failed`);
+        const text = await response.text();
+        for (const line of text.split('\n')) {
+          if (line.startsWith('Preamp:')) {
+            const match = line.match(/Preamp:\s*([-\d.]+)\s*dB/);
+            if (match) preamp = parseFloat(match[1]);
+          } else if (line.startsWith('Filter')) {
+            const match = line.match(/Fc\s+([\d.]+)\s+Hz\s+Gain\s+([-\d.]+)\s+dB\s+Q\s+([\d.]+)/);
+            if (match) {
+              bands.push({ type: 'Peaking', fc: parseFloat(match[1]), gain_db: parseFloat(match[2]), q: parseFloat(match[3]) });
+            }
+          }
+        }
+        autoEqProduct = product;
+      } else {
+        const profilePath = autoEqTree.find(e => e.path.includes(`vendors/${vendor}/products/${product}/eq/`) && e.path.endsWith('info.json'));
+        if (!profilePath) {
+          message = 'EQ 프로필을 찾지 못했습니다.';
+          return;
+        }
+        const response = await fetch(`https://raw.githubusercontent.com/opra-project/OPRA/main/${profilePath.path}`);
+        if (!response.ok) throw new Error(`AutoEQ request failed`);
+        const data = await response.json();
+        bands = data.parameters?.bands ?? [];
+        preamp = data.parameters?.gain_db ?? 0;
+        autoEqProduct = `${vendor} · ${product}`;
+      }
       
-      autoEqProduct = `${vendor} · ${product}`;
       autoEqQuery = autoEqProduct;
       autoEqResults = [];
-      localStorage.setItem(`vesper_dsp_opra_${output}`, JSON.stringify({ vendor, product, enabled: autoEqEnabled }));
-      
-      const bands = data.parameters?.bands ?? [];
-      const preamp = data.parameters?.gain_db ?? 0;
+      localStorage.setItem(`vesper_dsp_opra_${output}`, JSON.stringify({ mode: autoEqMode, vendor, product, enabled: autoEqEnabled }));
       
       await invoke('apply_output_eq_profile', {
         profile: { enabled: autoEqEnabled, preamp_gain: preamp, bands }
       });
-      emit('update-signal-path');
       message = `${autoEqProduct} 적용됨.`;
     } catch (e) {
       console.error(e);
@@ -257,8 +293,12 @@
   async function toggleAutoEq() {
     autoEqEnabled = !autoEqEnabled;
     if (autoEqProduct) {
-      const parts = autoEqProduct.split(' · ');
-      localStorage.setItem(`vesper_dsp_opra_${output}`, JSON.stringify({ vendor: parts[0], product: parts[1], enabled: autoEqEnabled }));
+      const savedOpraStr = localStorage.getItem(`vesper_dsp_opra_${output}`);
+      if (savedOpraStr) {
+        const opra = JSON.parse(savedOpraStr);
+        opra.enabled = autoEqEnabled;
+        localStorage.setItem(`vesper_dsp_opra_${output}`, JSON.stringify(opra));
+      }
       
       if (!autoEqEnabled) {
         await invoke('apply_output_eq_profile', { profile: { enabled: false, preamp_gain: 0, bands: [] } });
@@ -418,9 +458,10 @@
       if (opraStr) {
         const opra = JSON.parse(opraStr);
         autoEqEnabled = opra.enabled;
-        if (opra.vendor && opra.product) {
-          autoEqProduct = `${opra.vendor} · ${opra.product}`;
-          if (autoEqEnabled) await selectAutoEq(opra.vendor, opra.product);
+        autoEqMode = opra.mode || 'opra';
+        if (opra.product) {
+          autoEqProduct = autoEqMode === 'spinorama' ? opra.product : `${opra.vendor} · ${opra.product}`;
+          if (autoEqEnabled) await selectAutoEq({ vendor: opra.vendor, product: opra.product, mode: autoEqMode });
         }
       }
     }
@@ -560,10 +601,12 @@
         <div class="flex flex-col gap-3 border-t border-white/5 pt-3 relative" class:z-50={autoEqResults.length > 0}>
           
           <div class="flex flex-col gap-2 relative">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="text-[11px] font-bold tracking-widest text-apple-blue uppercase">AutoEQ (OPRA)</span>
-                <span class="text-[9px] text-white/50 ml-2">{autoEqProduct || '이어폰/헤드폰 미설정'}</span>
+            <div class="flex justify-between items-center mb-1">
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] font-bold tracking-widest text-apple-blue uppercase">자동 EQ</span>
+                <span class="text-[9px] text-white/50 truncate max-w-[150px]" title={autoEqProduct}>
+                  {autoEqProduct ? `[${autoEqMode === 'spinorama' ? '스피커' : '이어폰'}] ${autoEqProduct}` : '미설정'}
+                </span>
               </div>
               <button on:click={toggleAutoEq} class="flex items-center justify-center w-5 h-5 rounded-full transition-colors group {autoEqEnabled ? 'bg-apple-blue/20 hover:bg-apple-blue/40' : 'bg-white/5 hover:bg-white/20'}">
                 <svg class="w-3 h-3 transition-colors {autoEqEnabled ? 'text-apple-blue' : 'text-white/40'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
@@ -571,7 +614,7 @@
             </div>
             
             <div class="flex gap-2 bg-black/40 p-2 rounded-xl shadow-inner border border-white/5 relative z-10">
-              <input class="flex-1 min-w-0 bg-transparent px-2 py-1 text-[12px] text-white outline-none placeholder:text-white/30" bind:value={autoEqQuery} on:keydown={e => e.key==='Enter' && searchAutoEq()} placeholder="영문 모델명 검색 (예: Simgot EM6L)" />
+              <input class="flex-1 min-w-0 bg-transparent px-2 py-1 text-[12px] text-white outline-none placeholder:text-white/30" bind:value={autoEqQuery} on:keydown={e => e.key==='Enter' && searchAutoEq()} placeholder="영문 모델명 통합 검색 (스피커/이어폰)" />
               <button class="px-4 py-1.5 rounded-lg bg-white/10 text-[11px] font-bold hover:bg-white/20 transition-colors" on:click={searchAutoEq}>
                 {autoEqLoading ? '...' : '검색'}
               </button>
@@ -585,8 +628,11 @@
                 </div>
                 <div class="flex-1 overflow-y-auto p-1.5 flex flex-col gap-1">
                   {#each autoEqResults as r}
-                    <button class="flex flex-col w-full px-3 py-2.5 text-left rounded-lg hover:bg-white/10 transition-colors gap-0.5" on:click={() => selectAutoEq(r.vendor, r.product)}>
-                      <span class="font-bold text-[11.5px] text-white/90 truncate w-full">{r.product}</span>
+                    <button class="flex flex-col w-full px-3 py-2.5 text-left rounded-lg hover:bg-white/10 transition-colors gap-0.5" on:click={() => selectAutoEq(r)}>
+                      <div class="flex justify-between items-center w-full gap-2">
+                        <span class="font-bold text-[11.5px] text-white/90 truncate flex-1">{r.product}</span>
+                        <span class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-white/60 shrink-0">{r.mode === 'spinorama' ? '스피커' : '이어폰'}</span>
+                      </div>
                       <span class="text-[9px] text-white/40 tracking-wide truncate w-full">{r.vendor}</span>
                     </button>
                   {/each}
@@ -762,16 +808,27 @@
       
       <div class="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
         <div class="p-4 rounded-xl bg-white/5 border border-white/5">
-          <h3 class="text-sm font-bold text-white/90 mb-2">AutoEq</h3>
+          <h3 class="text-sm font-bold text-white/90 mb-2">AutoEq / OPRA</h3>
           <p class="text-xs text-white/60 mb-2 leading-relaxed">
-            이 소프트웨어는 전 세계 헤드폰 및 이어폰의 주파수 응답 데이터를 수집하고 이퀄라이제이션(EQ) 프로파일을 제공하는 오픈소스 프로젝트인 AutoEq의 데이터를 참조합니다.
+            이어폰/헤드폰용 이퀄라이제이션(EQ) 프로파일 기능은 AutoEq 프로젝트 및 OPRA 데이터베이스를 참조합니다.
           </p>
           <div class="text-[10px] text-white/40 font-mono bg-black/40 p-3 rounded-lg leading-relaxed">
             MIT License<br><br>
-            Copyright (c) 2018 Jaakko Pasanen<br><br>
+            Copyright (c) 2018 Jaakko Pasanen (AutoEq)<br>
+            Copyright (c) OPRA Project<br><br>
             Permission is hereby granted, free of charge, to any person obtaining a copy
-            of this software and associated documentation files (the "Software"), to deal
-            in the Software without restriction...
+            of this software and associated documentation files (the "Software")...
+          </div>
+        </div>
+        
+        <div class="p-4 rounded-xl bg-white/5 border border-white/5">
+          <h3 class="text-sm font-bold text-white/90 mb-2">Spinorama</h3>
+          <p class="text-xs text-white/60 mb-2 leading-relaxed">
+            스피커용 룸 튜닝 EQ 프로파일 기능은 오픈소스 스피커 측정 데이터베이스인 Spinorama.org 를 기반으로 제공됩니다.
+          </p>
+          <div class="text-[10px] text-white/40 font-mono bg-black/40 p-3 rounded-lg leading-relaxed">
+            Copyright (c) Pierre Aubert<br><br>
+            Data sources include Audio Science Review, ErinsAudioCorner, and others.
           </div>
         </div>
       </div>

@@ -18,6 +18,7 @@ static IS_RUNNING: Lazy<Arc<AtomicBool>> = Lazy::new(|| Arc::new(AtomicBool::new
 static LAST_CLIP_TIME: Lazy<AtomicI64> = Lazy::new(|| AtomicI64::new(0));
 static STREAMS: Lazy<Mutex<Vec<cpal::Stream>>> = Lazy::new(|| Mutex::new(Vec::new()));
 static ENGINE_TRANSITION: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+static STREAM_INFO: Lazy<Mutex<Option<StreamInfo>>> = Lazy::new(|| Mutex::new(None));
 
 pub static OUTPUT_MUTED: AtomicBool = AtomicBool::new(false);
 pub static OUTPUT_EQ_PROFILE: Lazy<Arc<Mutex<EqProfile>>> =
@@ -43,6 +44,20 @@ pub struct EqProfile {
 pub struct BitDepthOption {
     pub value: String,
     pub label: String,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct StreamInfo {
+    pub source_sample_rate: u32,
+    pub source_bit_depth: String,
+    pub source_channels: usize,
+    pub output_sample_rate: u32,
+    pub output_bit_depth: String,
+    pub output_channels: usize,
+}
+
+pub fn get_current_stream_info() -> Option<StreamInfo> {
+    STREAM_INFO.lock().ok().and_then(|info| info.clone())
 }
 
 fn get_host(_is_asio: bool) -> cpal::Host {
@@ -75,15 +90,12 @@ fn is_virtual_cable_device(name: &str) -> bool {
 
 pub fn get_source_devices(is_asio: bool) -> Vec<String> {
     let host = get_host(is_asio);
-    let mut device_names = host
-        .input_devices()
-        .map(|devices| devices.map(|device| device.to_string()).collect::<Vec<_>>())
-        .unwrap_or_default();
+    let mut device_names = Vec::new();
 
     if let Ok(devices) = host.output_devices() {
         for device in devices {
             let name = device.to_string();
-            if is_virtual_cable_device(&name) && !device_names.contains(&name) {
+            if !device_names.contains(&name) {
                 device_names.push(name);
             }
         }
@@ -95,7 +107,11 @@ pub fn get_source_devices(is_asio: bool) -> Vec<String> {
 pub fn get_output_devices(is_asio: bool) -> Vec<String> {
     let host = get_host(is_asio);
     host.output_devices()
-        .map(|devices| devices.map(|device| device.to_string()).collect())
+        .map(|devices| {
+            devices
+                .map(|device| device.to_string())
+                .collect()
+        })
         .unwrap_or_default()
 }
 
@@ -156,6 +172,36 @@ fn find_best_input_config(device: &cpal::Device) -> Result<cpal::SupportedStream
         .next()
         .map(cpal::SupportedStreamConfigRange::with_max_sample_rate)
         .ok_or_else(|| "No input config".to_string())
+}
+
+fn find_input_config_with_target(
+    device: &cpal::Device,
+    target_sample_rate: Option<u32>,
+) -> Result<cpal::SupportedStreamConfig, String> {
+    let Some(target_sample_rate) = target_sample_rate else {
+        return find_best_input_config(device);
+    };
+
+    let mut configs = device
+        .supported_input_configs()
+        .map_err(|_| "No input config".to_string())?
+        .filter(|config| sample_format_value(config.sample_format()).is_some())
+        .collect::<Vec<_>>();
+    configs.sort_by_key(|config| {
+        (
+            if config.sample_format() == cpal::SampleFormat::I32 { 0 } else { 1 },
+            std::cmp::Reverse(config.max_sample_rate()),
+        )
+    });
+
+    configs
+        .into_iter()
+        .find(|config| {
+            target_sample_rate >= config.min_sample_rate()
+                && target_sample_rate <= config.max_sample_rate()
+        })
+        .map(|config| config.with_sample_rate(target_sample_rate))
+        .ok_or_else(|| format!("Input device does not support {target_sample_rate} Hz"))
 }
 
 fn find_best_output_config(device: &cpal::Device) -> Result<cpal::SupportedStreamConfig, String> {
@@ -388,13 +434,17 @@ pub fn start_dsp_engine(
         find_source_device(&host, source_name).ok_or("Audio source device not found")?;
     let output_device = find_output_device(&host, output_name)
         .ok_or("Output device not found")?;
+    let output_config =
+        find_output_config_with_target(&output_device, target_sample_rate, output_sample_format)?;
+
     let source_config = if source_is_input {
-        find_best_input_config(&source_device)?
+        find_input_config_with_target(
+            &source_device,
+            Some(output_config.sample_rate()), // Always try to match output sample rate
+        )?
     } else {
         find_best_output_config(&source_device)?
     };
-    let output_config =
-        find_output_config_with_target(&output_device, target_sample_rate, output_sample_format)?;
 
     let input_rate = source_config.sample_rate() as f64;
     let output_rate = output_config.sample_rate() as f64;
@@ -675,6 +725,22 @@ pub fn start_dsp_engine(
     let mut streams = STREAMS.lock().map_err(|_| "Audio stream lock poisoned")?;
     streams.push(input_stream);
     streams.push(output_stream);
+
+    // 실제 스트림 파라미터를 static 변수에 저장 (프론트엔드에서 커맨드로 조회 가능)
+    let source_format = source_config.sample_format();
+    let output_format = output_config.sample_format();
+    if let Ok(mut info) = STREAM_INFO.lock() {
+        *info = Some(StreamInfo {
+            source_sample_rate: input_rate as u32,
+            source_bit_depth: sample_format_label(source_format).unwrap_or("Unknown").to_string(),
+            source_channels: input_channels,
+            output_sample_rate: output_rate as u32,
+            output_bit_depth: sample_format_label(output_format).unwrap_or("Unknown").to_string(),
+            output_channels: output_channels,
+        });
+    }
+    let _ = app_handle.emit("dsp-stream-info", ());
+
     println!("Vesper DSP active: {input_rate}Hz input -> {output_rate}Hz output");
     Ok(())
 }

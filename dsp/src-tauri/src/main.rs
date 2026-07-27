@@ -86,6 +86,11 @@ fn apply_output_eq_profile(profile: audio_engine::EqProfile) {
     audio_engine::update_output_eq_profile(profile);
 }
 
+#[tauri::command]
+fn get_stream_info() -> Option<audio_engine::StreamInfo> {
+    audio_engine::get_current_stream_info()
+}
+
 // Rust-side window spawn removed in favor of JS frontend spawn to prevent thread deadlocks.
 
 fn main() {
@@ -199,7 +204,8 @@ fn main() {
             start_dsp,
             stop_dsp,
             set_mute,
-            apply_output_eq_profile
+            apply_output_eq_profile,
+            get_stream_info
         ])
         .run(tauri::generate_context!())
         .expect("error while running Vesper DSP");

@@ -12,11 +12,13 @@
   // Source Profile
   let sourceSampleRate = 48000;
   let sourceBitDepth = '24bit';
+  let sourceChannels = 2;
   
   // Output Profile
   let headroomDb = -3.0;
   let sampleRate = 48000;
   let outputBitDepth = '32bit Float';
+  let outputChannels = 2;
 
   // EQ Profile
   $: eqEnabled = $page.url.searchParams.get('eq') === 'true';
@@ -56,6 +58,20 @@
     } else {
       sampleRate = 48000;
       outputBitDepth = '-';
+    }
+
+    // DSP 엔진이 실행 중이면 실제 스트림 파라미터로 덮어쓰기 (메인 페이지가 localStorage에 저장)
+    const streamInfoStr = localStorage.getItem('vesper_dsp_stream_info');
+    if (streamInfoStr) {
+      try {
+        const info = JSON.parse(streamInfoStr);
+        sourceSampleRate = info.source_sample_rate;
+        sourceBitDepth = info.source_bit_depth;
+        sourceChannels = info.source_channels;
+        sampleRate = info.output_sample_rate;
+        outputBitDepth = info.output_bit_depth;
+        outputChannels = info.output_channels;
+      } catch {}
     }
   }
 
@@ -147,7 +163,7 @@
         <div class="flex flex-col pt-1">
           <span class="text-sm font-bold text-white/90 flex items-center gap-2">오디오 소스 <span class="text-apple-blue">✨</span></span>
           <span class="text-[11px] text-apple-blue font-medium mt-1">{formatDeviceName(selectedSource)}</span>
-          <span class="text-[10px] text-white/40 mt-1">입력: {sourceSampleRate / 1000}kHz {sourceBitDepth === 'F32' ? '32bit Float (OS 믹서)' : sourceBitDepth} 2ch</span>
+          <span class="text-[10px] text-white/40 mt-1">입력: {sourceSampleRate / 1000}kHz {sourceBitDepth === 'F32' ? '32bit Float (OS 믹서)' : sourceBitDepth} {sourceChannels}ch</span>
         </div>
       </div>
 
@@ -158,7 +174,7 @@
         </div>
         <div class="flex flex-col pt-1">
           <span class="text-sm font-bold text-white/90 flex items-center gap-2">비트심도 변경 <span class="text-purple-400">✨</span></span>
-          <span class="text-[11px] text-purple-400 font-medium mt-1">{sourceBitDepth} ➡️ 64bit Float (내부 고정밀 DSP)</span>
+          <span class="text-[11px] text-purple-400 font-medium mt-1">{sourceBitDepth} ➡️ 64bit Float (DSP)</span>
         </div>
       </div>
 
@@ -203,13 +219,14 @@
         </div>
       {/if}
 
+
       <!-- Node 5: Output Bit Depth Re-Conversion -->
       <div class="flex items-start gap-5 relative h-[64px] mb-2">
         <div class="w-7 h-7 rounded-full flex items-center justify-center border border-white/10 z-10 shrink-0 bg-[#0E0E10]">
           <div class="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.8)]"></div>
         </div>
         <div class="flex flex-col pt-1">
-          <span class="text-sm font-bold text-white/90 flex items-center gap-2">비트심도 복원 <span class="text-purple-400">✨</span></span>
+          <span class="text-sm font-bold text-white/90 flex items-center gap-2">비트심도 변경 <span class="text-purple-400">✨</span></span>
           <span class="text-[11px] text-purple-400 font-medium mt-1">64bit Float (DSP) ➡️ {outputBitDepth === 'F32' ? '32bit Float (OS 믹서)' : outputBitDepth}</span>
         </div>
       </div>
