@@ -1,11 +1,11 @@
 {
-  "version": "0.0.11",
-  "notes": "Vesper DSP v0.0.11: Spinorama AutoEQ Integration & Bug Fixes",
-  "pub_date": "2026-07-27T09:48:00Z",
+  "version": "0.0.12",
+  "notes": "Vesper DSP v0.0.12: Added Third-party Open Source Licenses view and fixed background autostart behavior.",
+  "pub_date": "2026-07-27T11:10:00Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.11/VesperDSP_0.0.11_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlplNkE4M2hJRmVKMFJWc2NCM05lMmJDbHNIdzBiQjE0bkR6ZnpRRS9aWnVjNCtNaHZQU3BnSmdDbWV4NWdveVhJUmlLNTVmbFR2dzE3c2RzcVFXR0FZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MTQ2MDExCWZpbGU6VmVzcGVyRFNQXzAuMC4xMV94NjQtc2V0dXAuZXhlCnBZRWx4WnRXbDJyUjJyNUtQVzJDdUtnRDBRMHJJNFYxQ0Y1cVZIcjY1TGxnbEQwaWEwV2N2TUtZdXJ4bG42SWVadjEwZzdtckt4S2RhZVMzdmdFWERRPT0K"
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.12/VesperDSP_0.0.12_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmQva0JFeU12Y1lla0Uwd1c5YVFhSkZhYUJxT2g2WGZYS25ycXdRTUcyN3JaNEsrR2lpa3Y0WEtkWW4vOWNKenIydERxQlI4bEJiN29ab3NNL3hNUncwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MTUwNjEzCWZpbGU6VmVzcGVyRFNQXzAuMC4xMl94NjQtc2V0dXAuZXhlCnVyV3VpaWFEWUE1U2ZSWXcyVHVaYmIxaG9lay82d3M1MllYSTRrR0NNYXJrWFJnRkVzU1JSVkxOTnBLSUp3RzRhbzJZY3lXMlZlelN0OVNZdFFabEFBPT0K"
     }
   }
 }
