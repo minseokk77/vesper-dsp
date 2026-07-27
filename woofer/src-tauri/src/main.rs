@@ -101,9 +101,16 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-            Some(vec![]),
+            Some(vec!["--autostart"]),
         ))
         .setup(|app| {
+            let args: Vec<String> = std::env::args().collect();
+            if !args.contains(&"--autostart".to_string()) {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                }
+            }
+
             let ctrl_alt_w = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyW);
             if let Err(e) = app.global_shortcut().register(ctrl_alt_w) {
                 eprintln!("Failed to register global shortcut: {}", e);
