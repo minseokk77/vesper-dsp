@@ -18,7 +18,7 @@
   </div>
 
   <!-- Content -->
-  <div class="p-8 md:p-12 rounded-[32px] bg-[#1d1d1f] space-y-10">
+  <div class="p-8 md:p-12 rounded-[32px] bg-white/[0.02] border border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-[60px] space-y-10">
     {#each i18n.t.license.terms as term}
       <div class="space-y-3">
         <h3 class="text-xl font-semibold tracking-tight text-[#f5f5f7]">{term.title}</h3>

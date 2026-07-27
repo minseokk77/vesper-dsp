@@ -20,11 +20,11 @@
 
   <!-- Features Detail -->
   <div class="grid md:grid-cols-2 gap-6">
-    <div class="p-10 rounded-[32px] bg-[#1d1d1f]">
+    <div class="p-10 rounded-[32px] bg-white/[0.02] border border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-[60px]">
       <h3 class="text-2xl font-semibold tracking-tight text-[#f5f5f7] mb-4">{i18n.t.dspDetail.box1Title}</h3>
       <p class="text-[#86868b] leading-relaxed font-medium text-[17px]">{i18n.t.dspDetail.box1Desc}</p>
     </div>
-    <div class="p-10 rounded-[32px] bg-[#1d1d1f]">
+    <div class="p-10 rounded-[32px] bg-white/[0.02] border border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-[60px]">
       <h3 class="text-2xl font-semibold tracking-tight text-[#f5f5f7] mb-4">{i18n.t.dspDetail.box2Title}</h3>
       <p class="text-[#86868b] leading-relaxed font-medium text-[17px]">{i18n.t.dspDetail.box2Desc}</p>
     </div>

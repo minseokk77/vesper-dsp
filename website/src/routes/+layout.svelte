@@ -23,7 +23,7 @@
 <nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-500 {scrolled ? 'bg-black/70 backdrop-blur-3xl border-b border-white/[0.08] py-4' : 'bg-transparent py-8'}">
   <div class="max-w-6xl mx-auto px-6 flex justify-between items-center">
     <a href="/" class="text-xl font-semibold tracking-tight text-white hover:opacity-80 transition-opacity">
-      Vesper
+      Vesper<span class="text-blue-500">.</span>
     </a>
     <div class="flex items-center gap-8 text-xs font-medium text-[#86868b] tracking-wide">
       <a href="/dsp" class="hover:text-white transition-colors">{i18n.t.nav.dsp}</a>
@@ -41,15 +41,23 @@
   </div>
 </nav>
 
-<main class="min-h-screen">
+<!-- Ambient Liquid Background -->
+<div class="fixed inset-0 z-[-1] overflow-hidden bg-black pointer-events-none">
+  <!-- Glowing Orbs (macOS / VisionOS style ambient color) -->
+  <div class="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-indigo-600/30 blur-[120px] mix-blend-screen animate-pulse" style="animation-duration: 8s;"></div>
+  <div class="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-fuchsia-600/20 blur-[140px] mix-blend-screen animate-pulse" style="animation-duration: 10s; animation-delay: 2s;"></div>
+  <div class="absolute top-[40%] left-[30%] w-[40vw] h-[40vw] rounded-full bg-blue-500/20 blur-[130px] mix-blend-screen animate-pulse" style="animation-duration: 12s; animation-delay: 4s;"></div>
+</div>
+
+<main class="min-h-screen relative z-10">
 	{@render children()}
 </main>
 
 <!-- Footer -->
-<footer class="border-t border-white/[0.08] py-16 px-6 mt-20 relative z-10 bg-black">
+<footer class="border-t border-white/[0.08] py-16 px-6 mt-20 relative z-10 bg-black/50 backdrop-blur-md">
   <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
     <div class="flex flex-col items-center md:items-start gap-1">
-      <div class="text-lg font-semibold tracking-tight text-[#f5f5f7]">Vesper</div>
+      <div class="text-lg font-semibold tracking-tight text-[#f5f5f7]">Vesper<span class="text-blue-500">.</span></div>
       <span class="text-[#86868b] text-xs">{i18n.t.footer.copyright}</span>
     </div>
     <div class="text-xs text-[#86868b] flex flex-wrap gap-x-8 gap-y-4 mt-4 md:mt-0 justify-center">

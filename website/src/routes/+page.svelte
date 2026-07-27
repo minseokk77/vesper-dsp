@@ -39,32 +39,34 @@
   <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
     
     <!-- DSP Card -->
-    <a href="/dsp" class="group relative rounded-[32px] bg-[#1d1d1f] p-10 overflow-hidden hover:scale-[1.02] transition-transform duration-500 block">
+    <a href="/dsp" class="group relative rounded-[32px] bg-white/[0.02] border border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-[60px] p-10 overflow-hidden hover:scale-[1.02] transition-all duration-500 block hover:bg-white/[0.04]">
+      <div class="absolute inset-0 bg-gradient-to-br from-white/[0.08] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
       <div class="relative z-10 flex flex-col h-full">
         <h2 class="text-3xl font-semibold tracking-tight text-[#f5f5f7] mb-3">{i18n.t.home.dspTitle}</h2>
-        <p class="text-[#86868b] leading-relaxed font-medium mb-10 text-[17px] tracking-tight">
+        <p class="text-[#86868b] leading-relaxed font-medium mb-10 text-[17px] tracking-tight group-hover:text-white/80 transition-colors">
           {i18n.t.home.dspDesc}
         </p>
         
         <ul class="space-y-4 mt-auto">
           {#each i18n.t.home.dspFeatures as feature}
-            <li class="flex items-center gap-3 text-[15px] font-medium text-[#f5f5f7]/90"><span class="text-[#86868b]">→</span> {feature}</li>
+            <li class="flex items-center gap-3 text-[15px] font-medium text-[#f5f5f7]/90"><span class="text-[#86868b] group-hover:text-white transition-colors">→</span> {feature}</li>
           {/each}
         </ul>
       </div>
     </a>
 
     <!-- Woofer Card -->
-    <a href="/woofer" class="group relative rounded-[32px] bg-[#1d1d1f] p-10 overflow-hidden hover:scale-[1.02] transition-transform duration-500 block">
+    <a href="/woofer" class="group relative rounded-[32px] bg-white/[0.02] border border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-[60px] p-10 overflow-hidden hover:scale-[1.02] transition-all duration-500 block hover:bg-white/[0.04]">
+      <div class="absolute inset-0 bg-gradient-to-br from-white/[0.08] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
       <div class="relative z-10 flex flex-col h-full">
         <h2 class="text-3xl font-semibold tracking-tight text-[#f5f5f7] mb-3">{i18n.t.home.wooferTitle}</h2>
-        <p class="text-[#86868b] leading-relaxed font-medium mb-10 text-[17px] tracking-tight">
+        <p class="text-[#86868b] leading-relaxed font-medium mb-10 text-[17px] tracking-tight group-hover:text-white/80 transition-colors">
           {i18n.t.home.wooferDesc}
         </p>
         
         <ul class="space-y-4 mt-auto">
           {#each i18n.t.home.wooferFeatures as feature}
-            <li class="flex items-center gap-3 text-[15px] font-medium text-[#f5f5f7]/90"><span class="text-[#86868b]">→</span> {feature}</li>
+            <li class="flex items-center gap-3 text-[15px] font-medium text-[#f5f5f7]/90"><span class="text-[#86868b] group-hover:text-white transition-colors">→</span> {feature}</li>
           {/each}
         </ul>
       </div>
