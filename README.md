@@ -42,7 +42,7 @@ Tauri와 Rust 기반의 강력한 백엔드를 통해 Windows 운영체제 환�
 
 ## 📄 라이선스 (License)
 
-**Vesper DSP** is licensed under the MIT License.
-Copyright (c) 2026 Vesper (minseokk77)
+**Vesper DSP**는 클로즈드 소스(Closed-source) 소프트웨어로, 모든 저작권 및 지적재산권은 제작자에게 있습니다.
+Copyright (c) 2026 Vesper (minseokk77). **All Rights Reserved.**
 
-자세한 내용은 [LICENSE](./LICENSE) 파일을 참고하시기 바랍니다.
+무료로 다운로드 및 개인적 용도로의 사용이 가능하나, 소프트웨어의 무단 복제, 리버스 엔지니어링, 상업적 배포 및 재판매는 엄격히 금지됩니다. 자세한 내용은 [LICENSE](./LICENSE) 파일(EULA)을 참고하시기 바랍니다.
