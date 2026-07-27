@@ -1,11 +1,11 @@
 {
-  "version": "0.0.10",
-  "notes": "Vesper DSP v0.0.10: saves the locked window position, restores it on launch, and returns the window to that position if it is moved while locked.",
-  "pub_date": "2026-07-27T01:35:00Z",
+  "version": "0.0.11",
+  "notes": "Vesper DSP v0.0.11: Spinorama AutoEQ Integration & Bug Fixes",
+  "pub_date": "2026-07-27T09:48:00Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.10/VesperDSP_0.0.10_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlU2SVE5MFF5K0VkMzJtSU91YzFRRDQ5VmFrQ3ArUlI0RE1qSDNRdGxtK0VJTGQ2V0hQWkdzVFJkQjNUQVNMeElHaDhOdExYei8rMnBnbXRiMnlYc3dnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MTE1OTg5CWZpbGU6VmVzcGVyRFNQXzAuMC4xMF94NjQtc2V0dXAuZXhlCjR6TEFiUVQyY0JmdUdnU0huVFB2cjRHYTRad0ZhL2dtVFZBRER5b2IyUnpReGVuUEI4M29kVm5GWU1xV05mQmNKT3NYMGxscmNTNkZUc2NwUGhkTENBPT0K"
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.11/VesperDSP_0.0.11_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlplNkE4M2hJRmVKMFJWc2NCM05lMmJDbHNIdzBiQjE0bkR6ZnpRRS9aWnVjNCtNaHZQU3BnSmdDbWV4NWdveVhJUmlLNTVmbFR2dzE3c2RzcVFXR0FZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MTQ2MDExCWZpbGU6VmVzcGVyRFNQXzAuMC4xMV94NjQtc2V0dXAuZXhlCnBZRWx4WnRXbDJyUjJyNUtQVzJDdUtnRDBRMHJJNFYxQ0Y1cVZIcjY1TGxnbEQwaWEwV2N2TUtZdXJ4bG42SWVadjEwZzdtckt4S2RhZVMzdmdFWERRPT0K"
     }
   }
 }
