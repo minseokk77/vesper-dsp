@@ -1,11 +1,11 @@
 {
-  "version": "0.0.12",
-  "notes": "Vesper DSP v0.0.12: Added Third-party Open Source Licenses view and fixed background autostart behavior.",
-  "pub_date": "2026-07-27T11:10:00Z",
+  "version": "0.0.13",
+  "notes": "Vesper DSP v0.0.13: Use Task Scheduler Priority=1 autostart for faster boot launch.",
+  "pub_date": "2026-07-28T05:06:00Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.12/VesperDSP_0.0.12_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmQva0JFeU12Y1lla0Uwd1c5YVFhSkZhYUJxT2g2WGZYS25ycXdRTUcyN3JaNEsrR2lpa3Y0WEtkWW4vOWNKenIydERxQlI4bEJiN29ab3NNL3hNUncwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MTUwNjEzCWZpbGU6VmVzcGVyRFNQXzAuMC4xMl94NjQtc2V0dXAuZXhlCnVyV3VpaWFEWUE1U2ZSWXcyVHVaYmIxaG9lay82d3M1MllYSTRrR0NNYXJrWFJnRkVzU1JSVkxOTnBLSUp3RzRhbzJZY3lXMlZlelN0OVNZdFFabEFBPT0K"
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.13/VesperDSP_0.0.13_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlZkVE02ak1KRU1VK2E0bnJ1anhpLzUvNk11UzhKSXJNdEF1V25ncEtOaFJ2NUhkWUNaeHpVbDYwT1Rva1p1dVQ5b3NKcWhaUlc2aTB3UFAxZ1gwbEFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MjE1MTY2CWZpbGU6VmVzcGVyRFNQXzAuMC4xM194NjQtc2V0dXAuZXhlCk9oekZIVmpyOTI4ZHlycE13UzlKVEFodGtLWGV2bThIWVlQTmg5VHk3WlBFVnBaYUdvczRwcFhIaW1HN0J0RndnQ3ZOQ2RlR3ZTMHFmN2JGMFpucUN3PT0K"
     }
   }
 }
