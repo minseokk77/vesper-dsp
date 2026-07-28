@@ -218,10 +218,71 @@ fn main() {
             stop_dsp,
             set_mute,
             apply_output_eq_profile,
-            get_stream_info
+            get_stream_info,
+            enable_priority_autostart,
+            disable_priority_autostart,
+            is_priority_autostart_enabled
         ])
         .run(tauri::generate_context!())
         .expect("error while running Vesper DSP");
+}
+
+#[tauri::command]
+fn enable_priority_autostart() -> Result<(), String> {
+    let appdata = std::env::var("APPDATA").map_err(|e| format!("APPDATA 환경 변수 찾기 실패: {e}"))?;
+    let startup_dir = std::path::PathBuf::from(appdata)
+        .join("Microsoft")
+        .join("Windows")
+        .join("Start Menu")
+        .join("Programs")
+        .join("Startup");
+
+    let vbs_path = startup_dir.join("VesperDSP_Autostart.vbs");
+
+    let exe = std::env::current_exe().map_err(|e| format!("실행 파일 경로 오류: {e}"))?;
+    let exe_str = exe.to_string_lossy().to_string();
+
+    let vbs_content = format!(
+        "Set objShell = CreateObject(\"WScript.Shell\")\n\
+        objShell.Run \"cmd.exe /c start \"\"\"\" /HIGH \"\"{}\"\" --autostart\", 0, False\n",
+        exe_str
+    );
+
+    std::fs::write(&vbs_path, vbs_content).map_err(|e| format!("VBScript 생성 실패: {e}"))?;
+    Ok(())
+}
+
+#[tauri::command]
+fn disable_priority_autostart() -> Result<(), String> {
+    let appdata = std::env::var("APPDATA").map_err(|e| format!("APPDATA 환경 변수 찾기 실패: {e}"))?;
+    let vbs_path = std::path::PathBuf::from(appdata)
+        .join("Microsoft")
+        .join("Windows")
+        .join("Start Menu")
+        .join("Programs")
+        .join("Startup")
+        .join("VesperDSP_Autostart.vbs");
+
+    if vbs_path.exists() {
+        std::fs::remove_file(vbs_path).map_err(|e| format!("VBScript 삭제 실패: {e}"))?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn is_priority_autostart_enabled() -> bool {
+    if let Ok(appdata) = std::env::var("APPDATA") {
+        let vbs_path = std::path::PathBuf::from(appdata)
+            .join("Microsoft")
+            .join("Windows")
+            .join("Start Menu")
+            .join("Programs")
+            .join("Startup")
+            .join("VesperDSP_Autostart.vbs");
+        vbs_path.exists()
+    } else {
+        false
+    }
 }
 
 fn show_main_window(app: &tauri::AppHandle) {
