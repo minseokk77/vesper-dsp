@@ -4950,7 +4950,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "vesper-dsp"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "biquad",
  "cpal",
@@ -4970,6 +4970,7 @@ dependencies = [
  "tauri-plugin-process",
  "tauri-plugin-updater",
  "tauri-plugin-window-state",
+ "windows 0.62.2",
 ]
 
 [[package]]
