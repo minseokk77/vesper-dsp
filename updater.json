@@ -1,11 +1,11 @@
 {
-  "version": "0.0.13",
-  "notes": "Vesper DSP v0.0.13: Use Task Scheduler Priority=1 autostart for faster boot launch.",
-  "pub_date": "2026-07-28T05:06:00Z",
+  "version": "0.0.14",
+  "notes": "Vesper DSP v0.0.14: Fixed window visibility issue on autostart.",
+  "pub_date": "2026-07-28T05:12:00Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.13/VesperDSP_0.0.13_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlZkVE02ak1KRU1VK2E0bnJ1anhpLzUvNk11UzhKSXJNdEF1V25ncEtOaFJ2NUhkWUNaeHpVbDYwT1Rva1p1dVQ5b3NKcWhaUlc2aTB3UFAxZ1gwbEFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MjE1MTY2CWZpbGU6VmVzcGVyRFNQXzAuMC4xM194NjQtc2V0dXAuZXhlCk9oekZIVmpyOTI4ZHlycE13UzlKVEFodGtLWGV2bThIWVlQTmg5VHk3WlBFVnBaYUdvczRwcFhIaW1HN0J0RndnQ3ZOQ2RlR3ZTMHFmN2JGMFpucUN3PT0K"
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.14/VesperDSP_0.0.14_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmU4TWNzcE5Yd2pTWnpDai9hSlZzUzlOTnRFcHY3ZDFkUktnakUvMXdxY0dKcW9yV0RmRzVxUksyTjJIQmk4bEYwaUV0L2JFU2g2VzJGMkxra0JDZEEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MjE1NTEyCWZpbGU6VmVzcGVyRFNQXzAuMC4xNF94NjQtc2V0dXAuZXhlClMyby9RbTdoSVhrNlZ4ZnNMT096dDBEOEVrZWo0Y1d0amxPczFPRHVJOUZyK1BvZ0RoSGZjdHZ3UTJ2SDM1TzRhbjBtaHVPbm5NSnhHQ3VaQWxORENBPT0K"
     }
   }
 }
