@@ -6,120 +6,6 @@ use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
-#[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
-
-/// 작업 스케줄러 작업 이름
-const TASK_NAME: &str = "VesperDSP";
-/// CREATE_NO_WINDOW 플래그 (콘솔 창 없이 프로세스 실행)
-#[cfg(target_os = "windows")]
-const CREATE_NO_WINDOW: u32 = 0x08000000;
-
-/// Windows 작업 스케줄러에 VesperDSP를 Priority=1(HIGH) 로 등록합니다.
-/// 일반 레지스트리 Run 키보다 CPU 우선순위가 높아 부팅 직후 더 빠르게 초기화됩니다.
-#[tauri::command]
-fn enable_priority_autostart() -> Result<(), String> {
-    #[cfg(target_os = "windows")]
-    {
-        let exe = std::env::current_exe()
-            .map_err(|e| format!("실행 파일 경로 오류: {e}"))?;
-        let exe_str = exe.to_string_lossy().to_string();
-
-        // 현재 로그인된 사용자 계정 조회
-        let who = std::process::Command::new("whoami")
-            .creation_flags(CREATE_NO_WINDOW)
-            .output()
-            .map_err(|e| e.to_string())?;
-        let username = String::from_utf8_lossy(&who.stdout).trim().to_string();
-
-        // Priority=1 → HIGH_PRIORITY_CLASS (부팅 후 즉시 CPU 우선 선점)
-        let xml = format!(
-r#"<?xml version="1.0" encoding="UTF-16"?>
-<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
-  <Triggers>
-    <LogonTrigger>
-      <Enabled>true</Enabled>
-      <UserId>{username}</UserId>
-    </LogonTrigger>
-  </Triggers>
-  <Principals>
-    <Principal id="Author">
-      <UserId>{username}</UserId>
-      <LogonType>InteractiveToken</LogonType>
-      <RunLevel>LeastPrivilege</RunLevel>
-    </Principal>
-  </Principals>
-  <Settings>
-    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
-    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
-    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
-    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
-    <Priority>1</Priority>
-  </Settings>
-  <Actions Context="Author">
-    <Exec>
-      <Command>{exe_str}</Command>
-      <Arguments>--autostart</Arguments>
-    </Exec>
-  </Actions>
-</Task>"#
-        );
-
-        // schtasks는 UTF-16 LE BOM 인코딩 XML 요구
-        let temp_path = std::env::temp_dir().join("VesperDSP_task.xml");
-        let utf16_bytes: Vec<u8> = [0xFF, 0xFE]
-            .iter()
-            .copied()
-            .chain(xml.encode_utf16().flat_map(|c| c.to_le_bytes()))
-            .collect();
-        std::fs::write(&temp_path, utf16_bytes)
-            .map_err(|e| format!("임시 XML 파일 생성 실패: {e}"))?;
-
-        let result = std::process::Command::new("schtasks")
-            .args(["/create", "/tn", TASK_NAME, "/xml", temp_path.to_str().unwrap(), "/f"])
-            .creation_flags(CREATE_NO_WINDOW)
-            .output();
-
-        let _ = std::fs::remove_file(&temp_path);
-
-        let out = result.map_err(|e| format!("schtasks 실행 실패: {e}"))?;
-        if !out.status.success() {
-            return Err(format!("작업 스케줄러 등록 실패: {}", String::from_utf8_lossy(&out.stderr)));
-        }
-    }
-    Ok(())
-}
-
-/// 작업 스케줄러에서 VesperDSP 자동 시작 작업을 제거합니다.
-#[tauri::command]
-fn disable_priority_autostart() -> Result<(), String> {
-    #[cfg(target_os = "windows")]
-    {
-        let _ = std::process::Command::new("schtasks")
-            .args(["/delete", "/tn", TASK_NAME, "/f"])
-            .creation_flags(CREATE_NO_WINDOW)
-            .output();
-        // 작업이 없는 경우에도 에러 무시
-    }
-    Ok(())
-}
-
-/// 작업 스케줄러에 VesperDSP 자동 시작 작업이 등록되어 있는지 확인합니다.
-#[tauri::command]
-fn is_priority_autostart_enabled() -> bool {
-    #[cfg(target_os = "windows")]
-    {
-        return std::process::Command::new("schtasks")
-            .args(["/query", "/tn", TASK_NAME])
-            .creation_flags(CREATE_NO_WINDOW)
-            .output()
-            .map(|o| o.status.success())
-            .unwrap_or(false);
-    }
-    #[allow(unreachable_code)]
-    false
-}
-
 #[tauri::command]
 fn get_audio_devices(is_asio: bool) -> Vec<String> {
     audio_engine::get_available_devices(is_asio)
@@ -208,9 +94,6 @@ fn get_stream_info() -> Option<audio_engine::StreamInfo> {
 // Rust-side window spawn removed in favor of JS frontend spawn to prevent thread deadlocks.
 
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    let is_autostart = args.contains(&"--autostart".to_string());
-
     tauri::Builder::default()
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
@@ -224,7 +107,7 @@ fn main() {
                 .build(),
         )
         .plugin(tauri_plugin_process::init())
-        .plugin(if is_autostart {
+        .plugin(if std::env::args().any(|arg| arg == "--autostart") {
             tauri_plugin_window_state::Builder::default()
                 .with_state_flags(tauri_plugin_window_state::StateFlags::all() ^ tauri_plugin_window_state::StateFlags::VISIBLE)
                 .build()
@@ -232,13 +115,14 @@ fn main() {
             tauri_plugin_window_state::Builder::default().build()
         })
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .setup(move |app| {
-            if let Some(window) = app.get_webview_window("main") {
-                if is_autostart {
-                    // window_state 플러그인이 이전 가시 상태를 복원할 수 있으므로
-                    // 자동 시작 시에는 명시적으로 숨김 처리
-                    let _ = window.hide();
-                } else {
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec!["--autostart"]),
+        ))
+        .setup(|app| {
+            let args: Vec<String> = std::env::args().collect();
+            if !args.contains(&"--autostart".to_string()) {
+                if let Some(window) = app.get_webview_window("main") {
                     let _ = window.show();
                 }
             }
@@ -334,10 +218,7 @@ fn main() {
             stop_dsp,
             set_mute,
             apply_output_eq_profile,
-            get_stream_info,
-            enable_priority_autostart,
-            disable_priority_autostart,
-            is_priority_autostart_enabled
+            get_stream_info
         ])
         .run(tauri::generate_context!())
         .expect("error while running Vesper DSP");
