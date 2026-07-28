@@ -1,11 +1,11 @@
 {
-  "version": "0.0.16",
-  "notes": "Vesper DSP v0.0.16: Switched to VBScript HIGH priority autostart approach.",
-  "pub_date": "2026-07-28T05:27:00Z",
+  "version": "0.0.17",
+  "notes": "Vesper DSP v0.0.17: Reverted to standard registry autostart for app identity, but added native Rust Priority Elevation to HIGH for fast boot.",
+  "pub_date": "2026-07-28T06:26:00Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.16/VesperDSP_0.0.16_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmYxN2N0dFpGOFNTZFpSOXE0K3NPT0FzMzllK1lTM3lPbVhkdGF0b3Q3MEYxTTdHTGdQZnFUbE42c1EvTC9BNWsrVk4rR2k0Z3I5SERHL04zZUJLR0FZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MjE2NDYzCWZpbGU6VmVzcGVyRFNQXzAuMC4xNl94NjQtc2V0dXAuZXhlCk54MG1aSkdHSGl2ai9MdGViMExlYXp6ZlZwOFJWc3J1UVJLQjA3MUpIKzRmL2Zzd1JHOHJ1aGJOaHpoc1NvbW9hRFRuSW1ubFVtNndvOVRJR0dsYkNRPT0K"
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.17/VesperDSP_0.0.17_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlJLQmRtdlliSkVUYzlaUWZMMkN4c0o0ZS9jZ0NDcUNHbUVMZTRURldYWkJkYjJGcnR6YytyM0ROOXE5V0RlZ3llL3JVR0JLYjE2N1NqeGpTOEF0aWdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MjE5OTg3CWZpbGU6VmVzcGVyRFNQXzAuMC4xN194NjQtc2V0dXAuZXhlCjdpMyswdE9JSXd5SGpxNCtZdUhydHZ2TSt2MUt2RmFzeDZmVnpTQzlNaGV1VVYwYzhqSG1saFc1T3dtUWdGMHFrNjR1VUFPc2RzaGUxZ3NkV2hLREFRPT0K"
     }
   }
 }
