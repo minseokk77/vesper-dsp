@@ -1,42 +1,33 @@
-# sv
+# Vesper Web
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Vesper DSP와 Vesper Woofer를 소개하고 배포하는 공식 웹사이트입니다.
 
-## Creating a project
+## 제품
 
-If you're seeing this, you've probably already done this step. Congrats!
+- **Vesper DSP**: Windows 전체 오디오를 헤드폰, 이어폰, 스피커에 맞게 보정
+- **Vesper Woofer**: 2.1채널 시스템의 서브우퍼 딜레이와 크로스오버 정렬
 
-```sh
-# create a new project
-npx sv create my-app
-```
+## 기술 구성
 
-To recreate this project with the same configuration:
+- Next.js 16
+- React 19
+- TypeScript
+- vinext / Cloudflare Workers
 
-```sh
-# recreate this project
-pnpm dlx sv@0.16.6 create --template minimal --types ts --add tailwindcss="plugins:none" --install pnpm website
-```
+## 로컬 실행
 
-## Developing
+Node.js 22.13 이상이 필요합니다.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+```bash
+npm ci
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+## 검증
 
-To create a production version of your app:
-
-```sh
-npm run build
+```bash
+npm test
+npm run lint
 ```
 
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+프로덕션 웹사이트: [Vesper Audio Studio](https://vesper-audio-studio.minseok-7881.chatgpt.site)

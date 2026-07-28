@@ -1,24 +1,59 @@
-import tailwindcss from '@tailwindcss/vite';
-import adapter from '@sveltejs/adapter-static';
-import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import vinext from "vinext";
+import { defineConfig } from "vite";
+import hostingConfig from "./.openai/hosting.json";
+import { sites } from "./build/sites-vite-plugin";
 
-export default defineConfig({
-	plugins: [
-		tailwindcss(),
-		sveltekit({
-			compilerOptions: {
-				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
-				runes: ({ filename }) => filename.split(/[/\\]/).includes('node_modules') ? undefined : true
-			},
-			paths: {
-				base: process.env.BASE_PATH || ''
-			},
+const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
+  "00000000-0000-4000-8000-000000000000";
 
-			// adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
-			// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
-			// See https://svelte.dev/docs/kit/adapters for more information about adapters.
-			adapter: adapter()
-		})
-	]
+const { d1, r2 } = hostingConfig;
+
+// macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
+const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
+
+const localBindingConfig = {
+  main: "./worker/index.ts",
+  compatibility_flags: ["nodejs_compat"],
+  d1_databases: d1
+    ? [
+        {
+          binding: d1,
+          database_name: "site-creator-d1",
+          database_id: SITE_CREATOR_PLACEHOLDER_DATABASE_ID,
+        },
+      ]
+    : [],
+  r2_buckets: r2
+    ? [
+        {
+          binding: r2,
+          bucket_name: "site-creator-r2",
+        },
+      ]
+    : [],
+};
+
+export default defineConfig(async () => {
+  // Keep Wrangler and Miniflare state project-local. These are non-secret tool
+  // settings; application environment belongs in ignored `.env*` files.
+  process.env.WRANGLER_WRITE_LOGS ??= "false";
+  process.env.WRANGLER_LOG_PATH ??= ".wrangler/logs";
+  process.env.MINIFLARE_REGISTRY_PATH ??= ".wrangler/registry";
+
+  // Wrangler snapshots its log path while the Cloudflare plugin is imported.
+  const { cloudflare } = await import("@cloudflare/vite-plugin");
+
+  return {
+    server: isCodexSeatbeltSandbox
+      ? { watch: { useFsEvents: false, usePolling: true } }
+      : undefined,
+    plugins: [
+      vinext(),
+      sites(),
+      cloudflare({
+        viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
+        config: localBindingConfig,
+      }),
+    ],
+  };
 });
