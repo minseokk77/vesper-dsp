@@ -1,6 +1,6 @@
 [package]
 name = "vesper-dsp"
-version = "0.0.12"
+version = "0.0.13"
 description = "High-quality real-time audio resampling"
 authors = ["Vesper"]
 edition = "2021"
