@@ -1,11 +1,11 @@
 {
-  "version": "0.0.15",
-  "notes": "Vesper DSP v0.0.15: Revert to registry autostart to fix admin permission issue, but keep window hidden on startup.",
-  "pub_date": "2026-07-28T05:23:00Z",
+  "version": "0.0.16",
+  "notes": "Vesper DSP v0.0.16: Switched to VBScript HIGH priority autostart approach.",
+  "pub_date": "2026-07-28T05:27:00Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.15/VesperDSP_0.0.15_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmNIQzkxZ2hQS2JUNUV5WmRnOFBkY3IxRjU0bHovdUk4aVdWNVJKUDJOcmZvZ1lIWGJjVFE2QUxmaWlGclhsWjRrcTNkSWVGelNlRFRPWDNxdHExNnc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MjE2MTc5CWZpbGU6VmVzcGVyRFNQXzAuMC4xNV94NjQtc2V0dXAuZXhlCkZNNGlmOXhjRlFBbUtaZWs3ZEJzVUx0SFFXUlp3cllLUnRTTjNLT2dzNFNsZ3piVTJ4ZXNXWE5adG1DYXYyaUoyeklUKzZ6M3VWR1RXRUlZNUZZQUNBPT0K"
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.16/VesperDSP_0.0.16_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmYxN2N0dFpGOFNTZFpSOXE0K3NPT0FzMzllK1lTM3lPbVhkdGF0b3Q3MEYxTTdHTGdQZnFUbE42c1EvTC9BNWsrVk4rR2k0Z3I5SERHL04zZUJLR0FZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MjE2NDYzCWZpbGU6VmVzcGVyRFNQXzAuMC4xNl94NjQtc2V0dXAuZXhlCk54MG1aSkdHSGl2ai9MdGViMExlYXp6ZlZwOFJWc3J1UVJLQjA3MUpIKzRmL2Zzd1JHOHJ1aGJOaHpoc1NvbW9hRFRuSW1ubFVtNndvOVRJR0dsYkNRPT0K"
     }
   }
 }
