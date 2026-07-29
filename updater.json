@@ -1,11 +1,11 @@
 {
-  "version": "0.0.17",
+  "version": "0.0.18",
   "notes": "Vesper DSP v0.0.17: Reverted to standard registry autostart for app identity, but added native Rust Priority Elevation to HIGH for fast boot.",
   "pub_date": "2026-07-28T06:26:00Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.17/VesperDSP_0.0.17_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlJLQmRtdlliSkVUYzlaUWZMMkN4c0o0ZS9jZ0NDcUNHbUVMZTRURldYWkJkYjJGcnR6YytyM0ROOXE5V0RlZ3llL3JVR0JLYjE2N1NqeGpTOEF0aWdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MjE5OTg3CWZpbGU6VmVzcGVyRFNQXzAuMC4xN194NjQtc2V0dXAuZXhlCjdpMyswdE9JSXd5SGpxNCtZdUhydHZ2TSt2MUt2RmFzeDZmVnpTQzlNaGV1VVYwYzhqSG1saFc1T3dtUWdGMHFrNjR1VUFPc2RzaGUxZ3NkV2hLREFRPT0K"
+      "url": "https://github.com/minseokk77/vesper/releases/download/v0.0.18/VesperDSP_0.0.18_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlJ4YXAyckNzVEhtRlFpQys4cGx5d0s5bW1vTFRocVJTU3JQZ3hhRW1lVC9SNmtoZVhrNWFTSjdYR2I4cUlYWEhZdHB2SW96ck5yUmE2Q0hBMXgzcVFFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1Mjk2OTA4CWZpbGU6VmVzcGVyRFNQXzAuMC4xOF94NjQtc2V0dXAuZXhlClQxU1cwWm5lb0ZlL0RiVmNyU3EydHVyS0NHbm42UHdTemcwTWwraWFWQXBQR3hQaU5CcHRkZjIwZ1ZoajZackJMME5lQkFsRHNWTEV1YWI5eVUrK0R3PT0K"
     }
   }
 }
