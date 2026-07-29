@@ -5,8 +5,8 @@
   import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window';
   import { getVersion } from '@tauri-apps/api/app';
   import { relaunch } from '@tauri-apps/plugin-process';
-  import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
   import { check as checkUpdate } from '@tauri-apps/plugin-updater';
+  import { enable, disable, isEnabled } from '@tauri-apps/plugin-autostart';
   import CustomSelect from '$lib/components/CustomSelect.svelte';
 
   // 상태 변수
@@ -21,7 +21,8 @@
   let output = '';
   let targetRate: number | null = null;
   let strategy = '호환성 위주';
-  let filterType = '정확한 최소 단계';
+  type ResamplerFilter = 'linear_precise' | 'minimum_phase' | 'linear_smooth' | 'phase_smooth';
+  let filterType: ResamplerFilter = 'minimum_phase';
   let dsdFilter = '권장함 (30kHz Low Pass Filter)';
   let dsdGain = '+6.0dB';
   
@@ -47,6 +48,18 @@
   let autoEqMode: 'opra' | 'spinorama' = 'opra';
   interface AutoEqResult { vendor: string; product: string; mode: 'opra' | 'spinorama'; }
   interface AutoEqTreeNode { path: string; }
+  interface EqBandPayload { filter_type: string; frequency: number; gain_db: number; q: number; }
+  interface SavedAutoEq { vendor: string; product: string; mode: 'opra' | 'spinorama'; enabled: boolean; }
+  interface StreamInfo {
+    source_sample_rate: number;
+    source_bit_depth: string;
+    source_channels: number;
+    output_sample_rate: number;
+    output_bit_depth: string;
+    output_channels: number;
+  }
+  interface EngineStatus { running: boolean; }
+  interface EngineError { stage: string; message: string; }
 
   import spinoramaData from '$lib/spinorama_index.json';
 
@@ -75,6 +88,7 @@
   let lockedWindowPosition: WindowPosition | null = null;
   let isRestoringLockedPosition = false;
   let unlistenWindowMoved: (() => void) | undefined;
+  let eventUnlisteners: Array<() => void> = [];
   const supportedRates = [44100, 48000, 88200, 96000, 176400, 192000, 352800, 384000, 705600, 768000];
 
   const rateOptions = () => [
@@ -88,10 +102,10 @@
     { value: '개별설정', label: '개별설정' }
   ];
   const filterOptions = [
-    { value: '정밀한, 선형 위상', label: '정밀한, 선형 위상' },
-    { value: '정확한 최소 단계 (Minimum Phase)', label: '정확한 최소 단계 (Minimum Phase)' },
-    { value: '부드러움, 리니어 위상', label: '부드러움, 리니어 위상' },
-    { value: '부드러움, 위상 변화 최소화', label: '부드러움, 위상 변화 최소화' }
+    { value: 'linear_precise', label: '정밀한, 선형 위상' },
+    { value: 'minimum_phase', label: '정확한 최소 단계 (Minimum Phase)' },
+    { value: 'linear_smooth', label: '부드러움, 리니어 위상' },
+    { value: 'phase_smooth', label: '부드러움, 위상 변화 최소화' }
   ];
   const dsdFilterOptions = [
     { value: '보편적인 (24kHz Low Pass Filter)', label: '보편적인 (24kHz Low Pass Filter)' },
@@ -146,7 +160,7 @@
       isRunning = false;
       localStorage.setItem('vesper_dsp_is_running', 'false');
     } else {
-      startDsp();
+      await startDsp();
     }
   }
 
@@ -175,7 +189,7 @@
       isRunning = true;
       localStorage.setItem('vesper_dsp_is_running', 'true');
       // 실제 스트림 파라미터를 localStorage에 저장 (시그널 패스 iframe에서 접근용)
-      invoke<any>('get_stream_info').then((info) => {
+      invoke<StreamInfo | null>('get_stream_info').then((info) => {
         if (info) localStorage.setItem('vesper_dsp_stream_info', JSON.stringify(info));
       }).catch(() => {});
     } catch (e) {
@@ -197,8 +211,10 @@
     try {
       const response = await fetch('https://api.github.com/repos/opra-project/opra/git/trees/main?recursive=1');
       if (!response.ok) throw new Error(`OPRA request failed`);
-      const data = await response.json();
-      autoEqTree = (data.tree ?? []).filter((entry: any) => entry.path.startsWith('database/vendors/') && entry.path.endsWith('info.json'));
+      const data = await response.json() as { tree?: Array<{ path?: unknown }> };
+      autoEqTree = (data.tree ?? [])
+        .filter((entry): entry is { path: string } => typeof entry.path === 'string')
+        .filter((entry) => entry.path.startsWith('database/vendors/') && entry.path.endsWith('info.json'));
     } catch (e) {
       console.error(e);
       message = 'AutoEQ 목록을 불러오지 못했습니다.';
@@ -241,7 +257,7 @@
     const { vendor, product, mode } = result;
     autoEqMode = mode;
     try {
-      let bands: any[] = [];
+      let bands: EqBandPayload[] = [];
       let preamp = 0;
 
       if (autoEqMode === 'spinorama') {
@@ -255,7 +271,7 @@
           } else if (line.startsWith('Filter')) {
             const match = line.match(/Fc\s+([\d.]+)\s+Hz\s+Gain\s+([-\d.]+)\s+dB\s+Q\s+([\d.]+)/);
             if (match) {
-              bands.push({ type: 'Peaking', fc: parseFloat(match[1]), gain_db: parseFloat(match[2]), q: parseFloat(match[3]) });
+              bands.push({ filter_type: 'peaking', frequency: parseFloat(match[1]), gain_db: parseFloat(match[2]), q: parseFloat(match[3]) });
             }
           }
         }
@@ -268,9 +284,13 @@
         }
         const response = await fetch(`https://raw.githubusercontent.com/opra-project/OPRA/main/${profilePath.path}`);
         if (!response.ok) throw new Error(`AutoEQ request failed`);
-        const data = await response.json();
-        bands = data.parameters?.bands ?? [];
-        preamp = data.parameters?.gain_db ?? 0;
+        const data = await response.json() as {
+          parameters?: { gain_db?: unknown; bands?: Array<Record<string, unknown>> };
+        };
+        bands = (data.parameters?.bands ?? [])
+          .map(normalizeEqBand)
+          .filter((band): band is EqBandPayload => band !== null);
+        preamp = finiteNumber(data.parameters?.gain_db, 0);
         autoEqProduct = `${vendor} · ${product}`;
       }
       
@@ -294,25 +314,85 @@
     autoEqEnabled = !autoEqEnabled;
     if (autoEqProduct) {
       const savedOpraStr = localStorage.getItem(`vesper_dsp_opra_${output}`);
-      if (savedOpraStr) {
-        const opra = JSON.parse(savedOpraStr);
-        opra.enabled = autoEqEnabled;
-        localStorage.setItem(`vesper_dsp_opra_${output}`, JSON.stringify(opra));
+      const saved = parseSavedAutoEq(savedOpraStr);
+      if (!saved) {
+        autoEqEnabled = false;
+        message = '저장된 AutoEQ 프로필을 다시 선택해주세요.';
+        return;
       }
+      localStorage.setItem(
+        `vesper_dsp_opra_${output}`,
+        JSON.stringify({ ...saved, enabled: autoEqEnabled })
+      );
       
       if (!autoEqEnabled) {
         await invoke('apply_output_eq_profile', { profile: { enabled: false, preamp_gain: 0, bands: [] } });
         emit('update-signal-path');
       } else {
-        await selectAutoEq(parts[0], parts[1]);
+        if (saved.mode === 'opra') await loadAutoEqIndex();
+        await selectAutoEq(saved);
       }
+    }
+  }
+
+  function finiteNumber(value: unknown, fallback: number): number {
+    const parsed = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  function normalizeEqBand(band: Record<string, unknown>): EqBandPayload | null {
+    const frequency = finiteNumber(band.frequency ?? band.fc, Number.NaN);
+    const gainDb = finiteNumber(band.gain_db ?? band.gain, Number.NaN);
+    const q = finiteNumber(band.q, Number.NaN);
+    if (![frequency, gainDb, q].every(Number.isFinite) || frequency <= 0 || q <= 0) return null;
+    return {
+      filter_type: String(band.filter_type ?? band.type ?? 'peaking').toLowerCase(),
+      frequency,
+      gain_db: gainDb,
+      q
+    };
+  }
+
+  function parseSavedAutoEq(value: string | null): SavedAutoEq | null {
+    if (!value) return null;
+    try {
+      const parsed = JSON.parse(value) as Partial<SavedAutoEq>;
+      if (typeof parsed.vendor !== 'string' || typeof parsed.product !== 'string') return null;
+      return {
+        vendor: parsed.vendor,
+        product: parsed.product,
+        mode: parsed.mode === 'spinorama' ? 'spinorama' : 'opra',
+        enabled: parsed.enabled === true
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function normalizeResamplerFilter(value: string): ResamplerFilter {
+    switch (value) {
+      case 'linear_precise':
+      case '정밀한, 선형 위상':
+        return 'linear_precise';
+      case 'minimum_phase':
+      case '정확한 최소 단계':
+      case '정확한 최소 단계 (Minimum Phase)':
+        return 'minimum_phase';
+      case 'linear_smooth':
+      case '부드러움, 리니어 위상':
+        return 'linear_smooth';
+      case 'phase_smooth':
+      case '부드러움, 위상 변화 최소화':
+        return 'phase_smooth';
+      default:
+        return 'minimum_phase';
     }
   }
 
   // Settings Functions
   async function checkAutoStartStatus() {
     try {
-      autoStartEnabled = await invoke('is_priority_autostart_enabled');
+      autoStartEnabled = await isEnabled();
     } catch (e) {
       console.error('Failed to check autostart:', e);
     }
@@ -321,10 +401,10 @@
   async function toggleAutoStart() {
     try {
       if (autoStartEnabled) {
-        await invoke('disable_priority_autostart');
+        await disable();
         autoStartEnabled = false;
       } else {
-        await invoke('enable_priority_autostart');
+        await enable();
         autoStartEnabled = true;
       }
     } catch (e) {
@@ -447,66 +527,119 @@
     
     const t = localStorage.getItem('vesper_dsp_target_rate'); if (t) targetRate = Number(t);
     const st = localStorage.getItem('vesper_dsp_strategy'); if (st) strategy = st;
-    const f = localStorage.getItem('vesper_dsp_filter'); if (f) filterType = f;
+    const f = localStorage.getItem('vesper_dsp_filter'); if (f) filterType = normalizeResamplerFilter(f);
     const df = localStorage.getItem('vesper_dsp_dsd_filter'); if (df) dsdFilter = df;
     const dg = localStorage.getItem('vesper_dsp_dsd_gain'); if (dg) dsdGain = dg;
     const h = localStorage.getItem('vesper_dsp_headroom'); if (h) headroomDb = Number(h);
     const clipping = localStorage.getItem('vesper_dsp_show_clipping'); if (clipping !== null) showClipping = clipping === 'true';
 
     if (output) {
-      const opraStr = localStorage.getItem(`vesper_dsp_opra_${output}`);
-      if (opraStr) {
-        const opra = JSON.parse(opraStr);
+      const opra = parseSavedAutoEq(localStorage.getItem(`vesper_dsp_opra_${output}`));
+      if (opra) {
         autoEqEnabled = opra.enabled;
-        autoEqMode = opra.mode || 'opra';
+        autoEqMode = opra.mode;
         if (opra.product) {
           autoEqProduct = autoEqMode === 'spinorama' ? opra.product : `${opra.vendor} · ${opra.product}`;
-          if (autoEqEnabled) await selectAutoEq({ vendor: opra.vendor, product: opra.product, mode: autoEqMode });
+          if (autoEqEnabled) {
+            if (opra.mode === 'opra') await loadAutoEqIndex();
+            await selectAutoEq(opra);
+          }
         }
       }
     }
 
     settingsRestored = true;
 
-    listen('clipping-detected', () => {
+    eventUnlisteners.push(await listen('clipping-detected', () => {
       if (!showClipping) return;
       isClipping = true;
       clearTimeout(clipTimer);
       clipTimer = setTimeout(() => { isClipping = false; }, 500);
-    });
+    }));
 
-    listen('open-settings', async () => {
+    eventUnlisteners.push(await listen('open-settings', async () => {
       showSettings = true;
       await checkAutoStartStatus();
-    });
+    }));
+
+    eventUnlisteners.push(await listen<EngineError>('engine-error', ({ payload }) => {
+      isRunning = false;
+      isStarting = false;
+      localStorage.setItem('vesper_dsp_is_running', 'false');
+      message = `${payload.stage === 'input' ? '입력' : '출력'} 스트림 오류: ${payload.message}`;
+    }));
 
     const savedIsRunning = localStorage.getItem('vesper_dsp_is_running');
-    if (savedIsRunning === 'true') {
+    const engineStatus = await invoke<EngineStatus>('get_engine_status');
+    isRunning = engineStatus.running;
+    if (!engineStatus.running && savedIsRunning === 'true') {
       setTimeout(() => { startDsp(); }, 500);
     }
 
-    window.addEventListener('message', (e) => {
-      if (e.data && e.data.type === 'resize_signal_modal') {
-        signalModalHeight = Math.min(e.data.height + 60, 600);
-      }
-    });
+    window.addEventListener('message', handleWindowMessage);
   });
 
   onDestroy(() => {
     unlistenWindowMoved?.();
+    eventUnlisteners.forEach((unlisten) => unlisten());
+    eventUnlisteners = [];
+    window.removeEventListener('message', handleWindowMessage);
+    clearTimeout(clipTimer);
+    clearTimeout(restartTimer);
   });
 
+  function handleWindowMessage(event: MessageEvent) {
+    if (
+      typeof event.data === 'object' &&
+      event.data !== null &&
+      'type' in event.data &&
+      event.data.type === 'resize_signal_modal' &&
+      'height' in event.data
+    ) {
+      signalModalHeight = Math.min(finiteNumber(event.data.height, 440) + 60, 600);
+    }
+  }
+
   let restartTimer: ReturnType<typeof setTimeout>;
+  let savedSettingsSignature = '';
+  let engineSettingsSignature = '';
+
   $: {
-    if (settingsRestored && (source || output || targetRate || strategy || filterType || dsdFilter || dsdGain || headroomDb || showClipping)) {
+    const nextSavedSettingsSignature = JSON.stringify([
+      source,
+      output,
+      targetRate,
+      strategy,
+      filterType,
+      dsdFilter,
+      dsdGain,
+      headroomDb,
+      showClipping
+    ]);
+    if (settingsRestored && nextSavedSettingsSignature !== savedSettingsSignature) {
+      savedSettingsSignature = nextSavedSettingsSignature;
       save();
-      if (isRunning && typeof window !== 'undefined') {
+    }
+  }
+
+  $: {
+    const nextEngineSettingsSignature = JSON.stringify([
+      source,
+      output,
+      targetRate,
+      filterType,
+      headroomDb
+    ]);
+    if (settingsRestored && nextEngineSettingsSignature !== engineSettingsSignature) {
+      const shouldRestart = engineSettingsSignature !== '';
+      engineSettingsSignature = nextEngineSettingsSignature;
+      if (shouldRestart && isRunning && typeof window !== 'undefined') {
         clearTimeout(restartTimer);
         restartTimer = setTimeout(() => {
           startDsp(true);
         }, 500); // 0.5초 디바운스 (슬라이더 조작 시 뚝뚝 끊김 방지)
       }
-    } 
+    }
   }
 </script>
 
@@ -515,56 +648,61 @@
   
   <div class="liquid-glass w-full h-full flex flex-col relative overflow-hidden">
     
-    <div class="flex-1 flex flex-col gap-5 p-5 pt-5 overflow-y-auto overflow-x-hidden">
+    <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-4 p-4 pt-4 overflow-hidden">
       
       <div class="flex items-center justify-between z-10 pb-2 gap-2 {isWindowLocked ? '' : 'cursor-grab active:cursor-grabbing'}" 
+           role="presentation"
            on:mousedown={() => { if (!isWindowLocked) getCurrentWindow().startDragging(); }}>
-        <div class="pointer-events-none flex items-center gap-2 shrink-0">
-          <h1 class="text-xl font-bold tracking-tight text-white/90 whitespace-nowrap">Vesper <span class="text-white/30 font-normal mx-0.5">|</span> DSP</h1>
-          <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 shrink-0">
-            <div class="h-1.5 w-1.5 rounded-full transition-all duration-500 {isRunning ? 'bg-apple-blue shadow-[0_0_10px_rgba(10,132,255,0.8)]' : 'bg-white/20'}"></div>
-            <span class="text-[9px] font-bold text-white/50 tracking-widest uppercase mt-px">{isRunning ? 'Active' : 'Standby'}</span>
+        <div class="pointer-events-none flex items-center gap-1.5 shrink-0">
+          <h1 class="text-lg font-bold tracking-tight text-white/90 whitespace-nowrap">Vesper <span class="text-white/30 font-normal mx-0.5">|</span> DSP</h1>
+          <div class="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 ring-0 shadow-none shrink-0" style="border-color: rgba(255, 255, 255, 0.1);">
+            <div class="h-1.5 w-1.5 rounded-full transition-colors duration-300 {isRunning ? 'bg-[#0A84FF] shadow-[0_0_8px_rgba(10,132,255,0.7)]' : 'bg-white/20 shadow-none'}"></div>
+            <span class="text-[8px] font-bold text-white/50 tracking-widest uppercase mt-px">{isRunning ? 'Active' : 'Standby'}</span>
           </div>
         </div>
         
-        <div class="flex items-center gap-2 shrink-0" on:mousedown|stopPropagation>
+        <div class="flex items-center gap-3 pr-0.5 shrink-0" role="presentation" on:mousedown|stopPropagation>
+          <div class="flex items-center gap-2">
           <button on:click={async () => { showSettings = true; await checkAutoStartStatus(); }} class="flex items-center justify-center w-5 h-5 bg-transparent transition-colors group" title="환경설정" aria-label="환경설정">
-            <svg class="w-3.5 h-3.5 text-white/40 group-hover:text-apple-blue transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            <svg class="w-3.5 h-3.5 text-white/40 group-hover:text-white/70 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
           </button>
           <button on:click={() => isSignalModalOpen = true} class="flex items-center justify-center w-5 h-5 bg-transparent transition-colors group" title="시그널 패스 보기" aria-label="시그널 패스 보기">
-            <svg class="w-3.5 h-3.5 text-white/40 group-hover:text-apple-blue transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012-2h-2a2 2 0 01-2-2z"></path></svg>
+            <svg class="w-3.5 h-3.5 text-white/40 group-hover:text-white/70 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012-2h-2a2 2 0 01-2-2z"></path></svg>
           </button>
-          <button on:click={() => getCurrentWindow().minimize()} class="w-3.5 h-3.5 rounded-full bg-white/20 hover:bg-yellow-500 transition-colors"></button>
-          <button on:click={() => getCurrentWindow().hide()} class="w-3.5 h-3.5 rounded-full bg-white/20 hover:bg-red-500 transition-colors"></button>
+          </div>
+          <div class="flex items-center gap-2">
+          <button on:click={() => getCurrentWindow().minimize()} class="w-3 h-3 rounded-full bg-white/20 hover:bg-yellow-500 transition-colors" aria-label="최소화"></button>
+          <button on:click={() => getCurrentWindow().hide()} class="w-3 h-3 rounded-full bg-white/20 hover:bg-red-500 transition-colors" aria-label="트레이로 숨기기"></button>
+          </div>
         </div>
       </div>
 
-      <div class="flex flex-col gap-5">
+      <div class="flex flex-col gap-4">
         
-        <div class="flex flex-col gap-3">
+        <div class="flex flex-col gap-3.5">
           <div class="w-full flex flex-col gap-1.5 relative group">
-            <label class="text-[10px] font-semibold tracking-widest text-white/50 uppercase pl-1">Input Source</label>
+            <span class="text-[10px] font-semibold tracking-widest text-white/50 uppercase pl-1">Input Source</span>
             <CustomSelect bind:value={source} options={sourceDevices.map(d => ({ value: d, label: d }))} bind:isOpen={sourceMenuOpen} />
           </div>
           <div class="w-full flex flex-col gap-1.5 relative group">
-            <label class="text-[10px] font-semibold tracking-widest text-white/50 uppercase pl-1">Output Device</label>
+            <span class="text-[10px] font-semibold tracking-widest text-white/50 uppercase pl-1">Output Device</span>
             <CustomSelect bind:value={output} options={outputDevices.map(d => ({ value: d, label: d }))} bind:isOpen={outputMenuOpen} />
           </div>
         </div>
 
-        <div class="flex flex-col gap-4 border-t border-white/5 pt-3 relative" class:z-50={strategyMenuOpen || filterMenuOpen || dsdFilterMenuOpen || dsdGainMenuOpen}>
+        <div class="flex flex-col gap-3.5 border-t border-white/5 pt-2.5 relative" class:z-50={strategyMenuOpen || filterMenuOpen || dsdFilterMenuOpen || dsdGainMenuOpen}>
           <h3 class="text-xs font-bold tracking-widest text-white/70 uppercase flex items-center gap-2">
             <svg class="w-4 h-4 text-apple-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012-2h-2a2 2 0 01-2-2z"></path></svg>
             DSP 엔진 설정
           </h3>
           
-          <div class="flex flex-col gap-3.5">
+          <div class="flex flex-col gap-3">
             <div class="flex justify-between items-center gap-4">
               <div class="flex-1">
                 <p class="text-[11px] font-semibold text-white/90">샘플 레이트 변환</p>
                 <p class="text-[9px] text-white/40 mt-0.5">출력 샘플 속도 관리 방법</p>
               </div>
-              <div class="w-48 shrink-0 text-right relative" class:z-50={strategyMenuOpen}>
+              <div class="w-44 shrink-0 text-right relative" class:z-50={strategyMenuOpen}>
                 <CustomSelect bind:value={strategy} bind:isOpen={strategyMenuOpen} options={strategyOptions} align="right" />
               </div>
             </div>
@@ -573,7 +711,7 @@
               <div class="flex-1">
                 <p class="text-[11px] font-semibold text-white/90">리샘플링 필터</p>
               </div>
-              <div class="w-48 shrink-0 text-right relative" class:z-50={filterMenuOpen}>
+              <div class="w-44 shrink-0 text-right relative" class:z-50={filterMenuOpen}>
                 <CustomSelect bind:value={filterType} bind:isOpen={filterMenuOpen} options={filterOptions} align="right" />
               </div>
             </div>
@@ -582,7 +720,7 @@
               <div class="flex-1">
                 <p class="text-[11px] font-semibold text-white/90">DSD ▶ PCM 필터</p>
               </div>
-              <div class="w-48 shrink-0 text-right relative" class:z-50={dsdFilterMenuOpen}>
+              <div class="w-44 shrink-0 text-right relative" class:z-50={dsdFilterMenuOpen}>
                 <CustomSelect bind:value={dsdFilter} bind:isOpen={dsdFilterMenuOpen} options={dsdFilterOptions} align="right" />
               </div>
             </div>
@@ -608,7 +746,7 @@
                   {autoEqProduct ? `[${autoEqMode === 'spinorama' ? '스피커' : '이어폰'}] ${autoEqProduct}` : '미설정'}
                 </span>
               </div>
-              <button on:click={toggleAutoEq} class="flex items-center justify-center w-5 h-5 rounded-full transition-colors group {autoEqEnabled ? 'bg-apple-blue/20 hover:bg-apple-blue/40' : 'bg-white/5 hover:bg-white/20'}">
+              <button on:click={toggleAutoEq} aria-label="자동 EQ 전환" class="flex items-center justify-center w-5 h-5 rounded-full transition-colors group {autoEqEnabled ? 'bg-apple-blue/20 hover:bg-apple-blue/40' : 'bg-white/5 hover:bg-white/20'}">
                 <svg class="w-3 h-3 transition-colors {autoEqEnabled ? 'text-apple-blue' : 'text-white/40'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
               </button>
             </div>
@@ -644,7 +782,7 @@
         
         <div class="flex flex-col gap-2 border-t border-white/5 pt-3 transition-all duration-300 {isClipping ? 'bg-red-500/10 ring-1 ring-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.2)] rounded-xl p-2' : ''}">
           <div class="flex justify-between items-end">
-            <label class="text-[10px] font-semibold tracking-wider text-white/50 uppercase">Headroom</label>
+            <span class="text-[10px] font-semibold tracking-wider text-white/50 uppercase">Headroom</span>
             <span class="text-base font-bold tracking-tighter {isClipping ? 'text-red-400' : 'text-white/90'}">{headroomDb.toFixed(1)}<span class="text-[10px] text-white/40 ml-1 font-medium">dB</span></span>
           </div>
           <input type="range" min="-12" max="0" step="0.5" bind:value={headroomDb} class="apple-slider" />
@@ -659,10 +797,10 @@
       </div>
     </div>
 
-    <div class="px-5 pb-5 pt-2 mt-auto">
-      <div class="grid grid-cols-[1fr_auto] gap-3">
+    <div class="absolute inset-x-0 bottom-0 z-50 px-4 pb-3 pt-1 bg-[#1C1C1E]">
+      <div class="grid grid-cols-[1fr_auto] gap-2.5">
         <button 
-          class="w-full py-3 rounded-2xl font-bold text-sm tracking-wide uppercase transition-all duration-300 active:scale-[0.97] shadow-lg
+          class="w-full py-2.5 rounded-2xl font-bold text-sm tracking-wide uppercase transition-all duration-300 active:scale-[0.97] shadow-lg
                  {isRunning 
                    ? 'bg-apple-blue/20 text-apple-blue border border-apple-blue/30 hover:bg-apple-blue/30 shadow-[0_0_20px_rgba(10,132,255,0.15)]' 
                    : 'bg-white text-black hover:bg-gray-200'}"
@@ -684,11 +822,11 @@
 </div>
 
 {#if isSignalModalOpen}
-  <div class="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-200" on:mousedown|self={() => isSignalModalOpen = false}>
+  <div class="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-200" role="presentation" on:mousedown|self={() => isSignalModalOpen = false}>
     <div class="w-full max-w-sm bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" style="height: {signalModalHeight}px; max-height: 90vh; transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
       <div class="flex items-center justify-between p-4 border-b border-white/10 bg-black/20">
         <h2 class="text-lg font-bold text-white tracking-wide">Signal Path</h2>
-        <button on:click={() => isSignalModalOpen = false} class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer">
+        <button on:click={() => isSignalModalOpen = false} aria-label="시그널 패스 닫기" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>
@@ -704,7 +842,7 @@
 {/if}
 
 {#if showSettings}
-  <div class="absolute inset-0 z-50 flex items-center justify-center p-5 bg-black/60 backdrop-blur-md animate-in fade-in duration-200" on:click|self={() => showSettings = false}>
+  <div class="absolute inset-0 z-50 flex items-center justify-center p-5 bg-black/60 backdrop-blur-md animate-in fade-in duration-200" role="presentation" on:click|self={() => showSettings = false}>
     <div class="w-full max-w-sm bg-[#0E0E10]/95 border border-white/10 rounded-2xl flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.8)] overflow-hidden">
       <div class="flex items-center justify-between p-4 border-b border-white/5 bg-white/5">
         <h2 class="text-sm font-bold tracking-tight text-white/90 [&>svg]:hidden">
@@ -797,11 +935,11 @@
 {/if}
 
 {#if showLicense}
-  <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity" on:click={() => showLicense = false}>
-    <div class="relative w-full max-w-md bg-[#0E0E10] border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col gap-6" on:click|stopPropagation>
+  <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity" role="presentation" on:click|self={() => showLicense = false}>
+    <div class="relative w-full max-w-md bg-[#0E0E10] border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col gap-6">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-bold tracking-tight text-white/90">오픈소스 고지</h2>
-        <button on:click={() => showLicense = false} class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
+        <button on:click={() => showLicense = false} aria-label="오픈소스 고지 닫기" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
           <svg class="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>

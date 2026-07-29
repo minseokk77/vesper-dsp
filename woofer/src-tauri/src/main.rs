@@ -18,9 +18,7 @@ fn get_device_bit_depth(device_name: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn get_device_supported_sample_rates(
-    device_name: String,
-) -> Result<Vec<u32>, String> {
+fn get_device_supported_sample_rates(device_name: String) -> Result<Vec<u32>, String> {
     audio_engine::get_device_supported_sample_rates(&device_name)
 }
 
@@ -64,6 +62,11 @@ fn stop_sync() -> Result<String, String> {
 }
 
 #[tauri::command]
+fn get_engine_status() -> audio_engine::EngineStatus {
+    audio_engine::get_engine_status()
+}
+
+#[tauri::command]
 fn set_earphone_mute_cmd(muted: bool) {
     audio_engine::set_earphone_mute(muted);
 }
@@ -80,7 +83,7 @@ fn apply_earphone_eq_profile(profile: audio_engine::EqProfile) {
 
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{Emitter, Manager};
-use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState, Modifiers, Code};
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 fn main() {
     tauri::Builder::default()
@@ -93,10 +96,9 @@ fn main() {
                         }
                     }
                 })
-                .build()
+                .build(),
         )
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_window_state::Builder::default().build())
         .plugin(tauri_plugin_positioner::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(
@@ -117,10 +119,13 @@ fn main() {
             }
 
             let open_i = MenuItem::with_id(app, "open", "열기", true, None::<&str>)?;
-            
-            let preset_movie = MenuItem::with_id(app, "preset_movie", "Movie 프리셋", true, None::<&str>)?;
-            let preset_music = MenuItem::with_id(app, "preset_music", "Music 프리셋", true, None::<&str>)?;
-            let preset_gaming = MenuItem::with_id(app, "preset_gaming", "Gaming 프리셋", true, None::<&str>)?;
+
+            let preset_movie =
+                MenuItem::with_id(app, "preset_movie", "Movie 프리셋", true, None::<&str>)?;
+            let preset_music =
+                MenuItem::with_id(app, "preset_music", "Music 프리셋", true, None::<&str>)?;
+            let preset_gaming =
+                MenuItem::with_id(app, "preset_gaming", "Gaming 프리셋", true, None::<&str>)?;
             let preset_submenu = Submenu::with_items(
                 app,
                 "프리셋 로드",
@@ -128,8 +133,13 @@ fn main() {
                 &[&preset_movie, &preset_music, &preset_gaming],
             )?;
 
-            let signal_earphone_i =
-                MenuItem::with_id(app, "signal_earphone", "이어폰 신호 보기", true, None::<&str>)?;
+            let signal_earphone_i = MenuItem::with_id(
+                app,
+                "signal_earphone",
+                "이어폰 신호 보기",
+                true,
+                None::<&str>,
+            )?;
             let signal_speaker_i =
                 MenuItem::with_id(app, "signal_speaker", "우퍼 신호 보기", true, None::<&str>)?;
             let signal_submenu = Submenu::with_items(
@@ -144,11 +154,20 @@ fn main() {
 
             let menu = Menu::with_items(
                 app,
-                &[&open_i, &preset_submenu, &signal_submenu, &settings_i, &separator, &quit_i],
+                &[
+                    &open_i,
+                    &preset_submenu,
+                    &signal_submenu,
+                    &settings_i,
+                    &separator,
+                    &quit_i,
+                ],
             )?;
 
             let tray_icon_bytes = include_bytes!("../icons/tray_icon.png");
-            let img = image::load_from_memory(tray_icon_bytes).expect("Failed to load tray icon").into_rgba8();
+            let img = image::load_from_memory(tray_icon_bytes)
+                .expect("Failed to load tray icon")
+                .into_rgba8();
             let width = img.width();
             let height = img.height();
             let tray_image = tauri::image::Image::new_owned(img.into_raw(), width, height);
@@ -213,9 +232,7 @@ fn main() {
                             }
                         }
                     }
-                    "quit" => {
-                        std::process::exit(0);
-                    }
+                    "quit" => app.exit(0),
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
@@ -258,6 +275,7 @@ fn main() {
             get_device_supported_sample_rates,
             start_sync,
             stop_sync,
+            get_engine_status,
             set_earphone_mute_cmd,
             set_speaker_mute_cmd,
             apply_earphone_eq_profile

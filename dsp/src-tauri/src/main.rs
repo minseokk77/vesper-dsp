@@ -7,11 +7,6 @@ use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 #[tauri::command]
-fn get_audio_devices(is_asio: bool) -> Vec<String> {
-    audio_engine::get_available_devices(is_asio)
-}
-
-#[tauri::command]
 fn get_source_devices(is_asio: bool) -> Vec<String> {
     audio_engine::get_source_devices(is_asio)
 }
@@ -20,7 +15,6 @@ fn get_source_devices(is_asio: bool) -> Vec<String> {
 fn get_output_devices(is_asio: bool) -> Vec<String> {
     audio_engine::get_output_devices(is_asio)
 }
-
 
 #[tauri::command]
 fn get_device_sample_rate(device_name: String, is_asio: bool) -> Result<u32, String> {
@@ -49,6 +43,7 @@ fn get_device_supported_sample_rates(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 fn start_dsp(
     app: tauri::AppHandle,
     source: String,
@@ -91,6 +86,11 @@ fn get_stream_info() -> Option<audio_engine::StreamInfo> {
     audio_engine::get_current_stream_info()
 }
 
+#[tauri::command]
+fn get_engine_status() -> audio_engine::EngineStatus {
+    audio_engine::get_engine_status()
+}
+
 // Rust-side window spawn removed in favor of JS frontend spawn to prevent thread deadlocks.
 
 fn main() {
@@ -107,13 +107,6 @@ fn main() {
                 .build(),
         )
         .plugin(tauri_plugin_process::init())
-        .plugin(if std::env::args().any(|arg| arg == "--autostart") {
-            tauri_plugin_window_state::Builder::default()
-                .with_state_flags(tauri_plugin_window_state::StateFlags::all() ^ tauri_plugin_window_state::StateFlags::VISIBLE)
-                .build()
-        } else {
-            tauri_plugin_window_state::Builder::default().build()
-        })
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
@@ -184,7 +177,7 @@ fn main() {
                         show_main_window(app);
                         let _ = app.emit("open-settings", ());
                     }
-                    "quit" => std::process::exit(0),
+                    "quit" => app.exit(0),
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
@@ -208,9 +201,7 @@ fn main() {
                 let _ = window.hide();
             }
         })
-        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            get_audio_devices,
             get_source_devices,
             get_output_devices,
             get_device_sample_rate,
@@ -222,9 +213,7 @@ fn main() {
             set_mute,
             apply_output_eq_profile,
             get_stream_info,
-            enable_priority_autostart,
-            disable_priority_autostart,
-            is_priority_autostart_enabled
+            get_engine_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running Vesper DSP");
@@ -232,7 +221,9 @@ fn main() {
 
 #[cfg(windows)]
 fn elevate_process_priority() {
-    use windows::Win32::System::Threading::{GetCurrentProcess, SetPriorityClass, HIGH_PRIORITY_CLASS};
+    use windows::Win32::System::Threading::{
+        GetCurrentProcess, SetPriorityClass, HIGH_PRIORITY_CLASS,
+    };
     unsafe {
         let _ = SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
     }
@@ -249,83 +240,5 @@ fn show_main_window(app: &tauri::AppHandle) {
 fn emit_main<S: serde::Serialize + Clone>(app: &tauri::AppHandle, event: &str, payload: S) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.emit(event, payload);
-    }
-}
-
-#[tauri::command]
-fn enable_priority_autostart() -> Result<(), String> {
-    use std::os::windows::process::CommandExt;
-    let appdata = std::env::var("APPDATA").map_err(|e| format!("APPDATA 환경 변수 찾기 실패: {e}"))?;
-    let lnk_path = std::path::PathBuf::from(&appdata)
-        .join("Microsoft")
-        .join("Windows")
-        .join("Start Menu")
-        .join("Programs")
-        .join("Startup")
-        .join("VesperDSP.lnk");
-
-    let exe = std::env::current_exe().map_err(|e| format!("실행 파일 경로 오류: {e}"))?;
-    let exe_str = exe.to_string_lossy().to_string();
-
-    let ps_script = format!(
-        "$WshShell = New-Object -ComObject WScript.Shell; \
-         $Shortcut = $WshShell.CreateShortcut('{}'); \
-         $Shortcut.TargetPath = '{}'; \
-         $Shortcut.Arguments = '--autostart'; \
-         $Shortcut.WindowStyle = 7; \
-         $Shortcut.Save()",
-        lnk_path.to_string_lossy(),
-        exe_str
-    );
-
-    std::process::Command::new("powershell")
-        .args(&["-NoProfile", "-Command", &ps_script])
-        .creation_flags(0x08000000)
-        .output()
-        .map_err(|e| format!("PowerShell 바로가기 생성 실패: {e}"))?;
-
-    let reg_script = "\
-        New-Item -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize' -Force | Out-Null; \
-        Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize' -Name 'StartupDelayInMSec' -Value 0 -Type DWord";
-    
-    let _ = std::process::Command::new("powershell")
-        .args(&["-NoProfile", "-Command", reg_script])
-        .creation_flags(0x08000000)
-        .output();
-
-    Ok(())
-}
-
-#[tauri::command]
-fn disable_priority_autostart() -> Result<(), String> {
-    let appdata = std::env::var("APPDATA").map_err(|e| format!("APPDATA 환경 변수 찾기 실패: {e}"))?;
-    let lnk_path = std::path::PathBuf::from(&appdata)
-        .join("Microsoft")
-        .join("Windows")
-        .join("Start Menu")
-        .join("Programs")
-        .join("Startup")
-        .join("VesperDSP.lnk");
-
-    if lnk_path.exists() {
-        std::fs::remove_file(lnk_path).map_err(|e| format!("바로가기 삭제 실패: {e}"))?;
-    }
-    
-    Ok(())
-}
-
-#[tauri::command]
-fn is_priority_autostart_enabled() -> bool {
-    if let Ok(appdata) = std::env::var("APPDATA") {
-        let lnk_path = std::path::PathBuf::from(&appdata)
-            .join("Microsoft")
-            .join("Windows")
-            .join("Start Menu")
-            .join("Programs")
-            .join("Startup")
-            .join("VesperDSP.lnk");
-        lnk_path.exists()
-    } else {
-        false
     }
 }

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { invoke } from '@tauri-apps/api/core';
   import { emit, listen } from '@tauri-apps/api/event';
-  import { getCurrentWindow, getAllWindows } from '@tauri-apps/api/window';
+  import { getCurrentWindow, getAllWindows, PhysicalPosition } from '@tauri-apps/api/window';
   import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
   import { enable, disable, isEnabled } from '@tauri-apps/plugin-autostart';
   import { check } from '@tauri-apps/plugin-updater';
@@ -13,6 +13,7 @@
   // 설정 관련 상태
   let isSettingsOpen = false;
   let isLicenseOpen = false;
+  let showThirdPartyLicense = false;
   let autoStartEnabled = false;
   let isWindowLocked = typeof window !== 'undefined' ? localStorage.getItem('ws_isWindowLocked') === 'true' : false;
   let currentVersion = '1.0.0';
@@ -22,10 +23,18 @@
   let hasUpdate = false;
   let newVersion = '';
   let updateBody = '';
+  type WindowPosition = { x: number; y: number };
+  const windowLockPositionKey = 'ws_windowLockPosition';
+  let lockedWindowPosition: WindowPosition | null = null;
+  let isRestoringLockedPosition = false;
+  let unlistenWindowMoved: (() => void) | undefined;
 
   let activePreset = 'Music';
   let toastMessage = '';
-  let toastTimeout: any;
+  let toastTimeout: ReturnType<typeof setTimeout>;
+  let eventUnlisteners: Array<() => void> = [];
+  interface EngineStatus { running: boolean; }
+  interface EngineError { stage: string; message: string; }
 
   function showToast(msg: string) {
     toastMessage = msg;
@@ -86,6 +95,9 @@
   let lpfHz = 80;
   let lpfSlope = 24; // 0 (Off), 12, 24
   let isSyncing = false;
+  let settingsRestored = false;
+  let lastEngineConfig = '';
+  let restartTimer: ReturnType<typeof setTimeout>;
 
   // 고급 DSP 설정 상태 변수 (Roon Style)
   let headroomDb = -3.0;
@@ -109,8 +121,8 @@
   // 클리핑 인디케이터 상태
   let isEarphoneClipping = false;
   let isSpeakerClipping = false;
-  let earphoneClipTimer: any;
-  let speakerClipTimer: any;
+  let earphoneClipTimer: ReturnType<typeof setTimeout>;
+  let speakerClipTimer: ReturnType<typeof setTimeout>;
 
   // 개별 출력 음소거 상태
   let isEarphoneMuted = typeof window !== 'undefined' ? localStorage.getItem('ws_isEarphoneMuted') === 'true' : false;
@@ -146,9 +158,7 @@
     : 'rgba(255, 255, 255, 0.0)'; 
 
   async function toggleSync() {
-    isSyncing = !isSyncing;
-    localStorage.setItem('ws_isSyncing', isSyncing ? 'true' : 'false');
-    if (isSyncing) {
+    if (!isSyncing) {
       try {
         let earTargetSr = null;
         let spkTargetSr = null;
@@ -177,6 +187,8 @@
           earphoneFilter: earFilter,
           speakerFilter: spkFilter
         });
+        isSyncing = true;
+        localStorage.setItem('ws_isSyncing', 'true');
       } catch (e) {
         console.error(e);
         alert("백엔드 오류: " + e);
@@ -184,7 +196,41 @@
         localStorage.setItem('ws_isSyncing', 'false');
       }
     } else {
+      try {
+        await invoke('stop_sync');
+        isSyncing = false;
+        localStorage.setItem('ws_isSyncing', 'false');
+      } catch (e) {
+        console.error(e);
+        showToast(`엔진 중지 실패: ${String(e)}`);
+      }
+    }
+  }
+
+  function engineConfigSnapshot() {
+    return JSON.stringify({
+      selectedSource,
+      selectedEarphone,
+      selectedSpeaker,
+      delayMs,
+      lpfHz,
+      lpfSlope,
+      headroomDb,
+      sampleRateStrategy,
+      sampleRateFilter
+    });
+  }
+
+  async function restartSync() {
+    if (!isSyncing) return;
+    try {
       await invoke('stop_sync');
+      isSyncing = false;
+      await toggleSync();
+    } catch (error) {
+      isSyncing = false;
+      localStorage.setItem('ws_isSyncing', 'false');
+      showToast(`설정 적용 실패: ${String(error)}`);
     }
   }
 
@@ -229,20 +275,32 @@
   onMount(async () => {
     await fetchDevices();
 
-    // 트레이 이벤트 등 리스닝
-    listen('open-settings', () => {
-      isSettingsOpen = true;
-    });
-    
-    listen('toggle-sync', () => {
-      toggleSync();
+    if (isWindowLocked) {
+      lockedWindowPosition = loadLockedWindowPosition();
+      if (lockedWindowPosition) await restoreLockedWindowPosition();
+      else await saveLockedWindowPosition();
+    }
+    unlistenWindowMoved = await getCurrentWindow().onMoved(({ payload }) => {
+      if (!isWindowLocked || !lockedWindowPosition || isRestoringLockedPosition) return;
+      if (payload.x !== lockedWindowPosition.x || payload.y !== lockedWindowPosition.y) {
+        void restoreLockedWindowPosition();
+      }
     });
 
-    listen('load-preset', (event) => {
+    // 트레이 이벤트 등 리스닝
+    eventUnlisteners.push(await listen('open-settings', () => {
+      isSettingsOpen = true;
+    }));
+    
+    eventUnlisteners.push(await listen('toggle-sync', () => {
+      void toggleSync();
+    }));
+
+    eventUnlisteners.push(await listen('load-preset', (event) => {
       if (typeof event.payload === 'string') {
         loadPreset(event.payload);
       }
-    });
+    }));
 
     currentVersion = await getVersion();
     autoStartEnabled = await isEnabled();
@@ -252,32 +310,27 @@
     await invoke('set_speaker_mute_cmd', { muted: isSpeakerMuted });
 
     // 백엔드에서 윈도우 상태 검증 후 쏘므로 무조건 새 창 팝업
-    listen('open-signal', async (e) => {
+    eventUnlisteners.push(await listen('open-signal', async (e) => {
       const target = (e.payload || 'earphone') as 'earphone' | 'speaker';
-      openSignalPath(target);
-    });
+      await openSignalPath(target);
+    }));
 
     // 멀티 윈도우(설정 창)에서 값이 변경되었을 때 실시간 감지
-    window.addEventListener('storage', (e) => {
-      const cur = selectedEarphone;
-      if (!cur) return;
-      if (e.key === `ws_headroom_${cur}`) headroomDb = Number(e.newValue);
-      if (e.key === `ws_clipping_${cur}`) showClipping = e.newValue === 'true';
-      if (e.key === `ws_srStrategy_${cur}`) sampleRateStrategy = e.newValue || '호환성 위주';
-      if (e.key === `ws_srFilter_${cur}`) sampleRateFilter = e.newValue || '정확한 최소 단계';
-      if (e.key === `ws_dsdFilter_${cur}`) dsdFilter = e.newValue || '권장함 (30kHz Low Pass Filter)';
-      if (e.key === `ws_dsdGain_${cur}`) dsdGain = e.newValue || '+6.0dB';
-    });
+    window.addEventListener('storage', handleStorageChange);
 
     // 자동 시작 상태 복구 (이전에 켜둔 상태였다면 앱 부팅 시 자동 시작)
-    if (localStorage.getItem('ws_isSyncing') === 'true') {
+    const engineStatus = await invoke<EngineStatus>('get_engine_status');
+    isSyncing = engineStatus.running;
+    lastEngineConfig = engineConfigSnapshot();
+    settingsRestored = true;
+    if (!engineStatus.running && localStorage.getItem('ws_isSyncing') === 'true') {
       setTimeout(() => {
-        if (!isSyncing) toggleSync();
+        if (!isSyncing) void toggleSync();
       }, 500);
     }
 
     // 클리핑 이벤트 수신
-    listen('clipping-detected', (event) => {
+    eventUnlisteners.push(await listen('clipping-detected', (event) => {
       if (!showClipping) return;
       const target = event.payload as string;
       if (target === 'earphone') {
@@ -289,7 +342,35 @@
         clearTimeout(speakerClipTimer);
         speakerClipTimer = setTimeout(() => { isSpeakerClipping = false; }, 500);
       }
-    });
+    }));
+
+    eventUnlisteners.push(await listen<EngineError>('engine-error', ({ payload }) => {
+      isSyncing = false;
+      localStorage.setItem('ws_isSyncing', 'false');
+      showToast(`${payload.stage} 스트림 오류: ${payload.message}`);
+    }));
+  });
+
+  function handleStorageChange(event: StorageEvent) {
+    const current = selectedEarphone;
+    if (!current) return;
+    if (event.key === `ws_headroom_${current}`) headroomDb = Number(event.newValue);
+    if (event.key === `ws_clipping_${current}`) showClipping = event.newValue === 'true';
+    if (event.key === `ws_srStrategy_${current}`) sampleRateStrategy = event.newValue || '호환성 위주';
+    if (event.key === `ws_srFilter_${current}`) sampleRateFilter = event.newValue || '정확한 최소 단계';
+    if (event.key === `ws_dsdFilter_${current}`) dsdFilter = event.newValue || '권장함 (30kHz Low Pass Filter)';
+    if (event.key === `ws_dsdGain_${current}`) dsdGain = event.newValue || '+6.0dB';
+  }
+
+  onDestroy(() => {
+    unlistenWindowMoved?.();
+    eventUnlisteners.forEach((unlisten) => unlisten());
+    eventUnlisteners = [];
+    window.removeEventListener('storage', handleStorageChange);
+    clearTimeout(toastTimeout);
+    clearTimeout(earphoneClipTimer);
+    clearTimeout(speakerClipTimer);
+    clearTimeout(restartTimer);
   });
 
   function openDspModal(target: 'earphone' | 'speaker') {
@@ -346,9 +427,53 @@
     }
   }
 
-  function toggleWindowLock() {
-    isWindowLocked = !isWindowLocked;
-    localStorage.setItem('ws_isWindowLocked', isWindowLocked.toString());
+  function loadLockedWindowPosition(): WindowPosition | null {
+    const stored = localStorage.getItem(windowLockPositionKey);
+    if (!stored) return null;
+    try {
+      const position = JSON.parse(stored) as Partial<WindowPosition>;
+      return Number.isFinite(position.x) && Number.isFinite(position.y)
+        ? { x: Number(position.x), y: Number(position.y) }
+        : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function saveLockedWindowPosition() {
+    const position = await getCurrentWindow().outerPosition();
+    lockedWindowPosition = { x: position.x, y: position.y };
+    localStorage.setItem(windowLockPositionKey, JSON.stringify(lockedWindowPosition));
+  }
+
+  async function restoreLockedWindowPosition() {
+    if (!isWindowLocked || !lockedWindowPosition || isRestoringLockedPosition) return;
+    isRestoringLockedPosition = true;
+    try {
+      await getCurrentWindow().setPosition(
+        new PhysicalPosition(lockedWindowPosition.x, lockedWindowPosition.y)
+      );
+    } finally {
+      setTimeout(() => { isRestoringLockedPosition = false; }, 0);
+    }
+  }
+
+  async function toggleWindowLock() {
+    if (isWindowLocked) {
+      isWindowLocked = false;
+      lockedWindowPosition = null;
+      localStorage.setItem('ws_isWindowLocked', 'false');
+      localStorage.removeItem(windowLockPositionKey);
+      return;
+    }
+    try {
+      await saveLockedWindowPosition();
+      isWindowLocked = true;
+      localStorage.setItem('ws_isWindowLocked', 'true');
+    } catch (error) {
+      console.error('Window position lock failed:', error);
+      showToast('창 위치를 저장하지 못했습니다.');
+    }
   }
 
   async function checkUpdate() {
@@ -457,6 +582,17 @@
     }
   }
 
+  $: {
+    const engineConfig = engineConfigSnapshot();
+    if (settingsRestored && engineConfig !== lastEngineConfig) {
+      lastEngineConfig = engineConfig;
+      if (isSyncing) {
+        clearTimeout(restartTimer);
+        restartTimer = setTimeout(() => { void restartSync(); }, 500);
+      }
+    }
+  }
+
 </script>
 
 <div class="relative w-screen h-screen transition-all duration-1000 ease-in-out"
@@ -469,6 +605,7 @@
       <!-- 헤더부: 타이틀 및 API 토글 (통합된 드래그 & 컨트롤바) -->
       <div 
         class="flex items-center justify-between z-10 pb-2 gap-2 {isWindowLocked ? '' : 'cursor-grab active:cursor-grabbing'}"
+        role="presentation"
         on:mousedown={() => { if (!isWindowLocked) getCurrentWindow().startDragging(); }}
       >
         <!-- 좌측: 메인 타이틀 및 상태 (드래그 반응) -->
@@ -483,7 +620,7 @@
         </div>
 
         <!-- 우측: 컨트롤 영역 (드래그 이벤트 전파 방지) -->
-        <div class="flex items-center gap-2 shrink-0" on:mousedown|stopPropagation>
+        <div class="flex items-center gap-2 shrink-0" role="presentation" on:mousedown|stopPropagation>
           <!-- 윈도우 조작 버튼 -->
           <div class="flex items-center gap-2">
             <!-- 설정 버튼 -->
@@ -532,7 +669,7 @@
       
       <!-- Audio Source -->
       <div class="flex flex-col gap-2 relative group">
-        <label class="text-[11px] font-semibold tracking-wider text-white/50 uppercase pl-1">Audio Source (Virtual Cable)</label>
+        <span class="text-[11px] font-semibold tracking-wider text-white/50 uppercase pl-1">Audio Source (Virtual Cable)</span>
         <CustomSelect 
           bind:value={selectedSource}
           options={devices.map(d => ({ value: d, label: d }))}
@@ -542,7 +679,7 @@
       <!-- Earphone -->
       <div class="flex flex-col gap-2 border-t border-white/5 pt-2 p-1.5 -mx-1.5 rounded-xl relative group transition-all duration-300 {isEarphoneClipping ? 'bg-red-500/20 ring-2 ring-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]' : ''}">
         <div class="flex justify-between items-center pr-1">
-          <label class="text-[11px] font-semibold tracking-wider text-white/50 uppercase pl-1">Primary Earphones</label>
+          <span class="text-[11px] font-semibold tracking-wider text-white/50 uppercase pl-1">Primary Earphones</span>
           <div class="flex items-center gap-2">
             <!-- 시그널 패스 버튼 -->
             <button on:click={() => openSignalModal('earphone')} class="flex items-center justify-center w-5 h-5 rounded-full bg-white/5 hover:bg-white/20 transition-colors group" title="시그널 패스 보기">
@@ -567,7 +704,7 @@
       <!-- Speaker -->
       <div class="flex flex-col gap-2 border-t border-white/5 pt-2 p-1.5 -mx-1.5 rounded-xl relative group transition-all duration-300 {isSpeakerClipping ? 'bg-red-500/20 ring-2 ring-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]' : ''}">
         <div class="flex justify-between items-center pr-1">
-          <label class="text-[11px] font-semibold tracking-wider text-white/50 uppercase pl-1">Sub Woofer</label>
+          <span class="text-[11px] font-semibold tracking-wider text-white/50 uppercase pl-1">Sub Woofer</span>
           <div class="flex items-center gap-2">
             <!-- 시그널 패스 버튼 -->
             <button on:click={() => openSignalModal('speaker')} class="flex items-center justify-center w-5 h-5 rounded-full bg-white/5 hover:bg-white/20 transition-colors group" title="시그널 패스 보기">
@@ -593,7 +730,7 @@
     <!-- 딜레이 슬라이더 -->
     <div class="flex flex-col gap-2 border-t border-white/5 pt-2">
       <div class="flex justify-between items-end">
-        <label class="text-[11px] font-semibold tracking-wider text-white/50 uppercase">Phase Delay</label>
+        <span class="text-[11px] font-semibold tracking-wider text-white/50 uppercase">Phase Delay</span>
         <span class="text-xl font-bold tracking-tighter text-white/90">{delayMs}<span class="text-xs text-white/40 ml-1 font-medium">ms</span></span>
       </div>
       <input 
@@ -669,7 +806,7 @@
 
     <!-- Settings Modal -->
     {#if isSettingsOpen}
-    <div class="absolute inset-0 z-50 flex items-center justify-center p-5 bg-black/60 backdrop-blur-md animate-in fade-in duration-200" on:click|self={() => isSettingsOpen = false}>
+    <div class="absolute inset-0 z-50 flex items-center justify-center p-5 bg-black/60 backdrop-blur-md animate-in fade-in duration-200" role="presentation" on:click|self={() => isSettingsOpen = false}>
       <div class="w-full max-w-sm bg-[#0E0E10]/95 border border-white/10 rounded-2xl flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.8)] overflow-hidden">
         <!-- Header -->
         <div class="flex items-center justify-between p-4 border-b border-white/5 bg-white/5">
@@ -688,7 +825,7 @@
                 <p class="text-xs font-semibold text-white/90">Windows 시작 시 자동 실행</p>
                 <p class="text-[9px] text-white/50 mt-1">부팅 시 백그라운드로 자동 실행</p>
               </div>
-              <button class="w-10 h-5 rounded-full transition-colors {autoStartEnabled ? 'bg-green-500' : 'bg-white/20'} relative" on:click={toggleAutoStart}>
+              <button class="w-10 h-5 rounded-full transition-colors {autoStartEnabled ? 'bg-green-500' : 'bg-white/20'} relative" on:click={toggleAutoStart} aria-label="Windows 자동 실행 전환">
                 <div class="absolute w-4 h-4 bg-white rounded-full top-[2px] transition-transform {autoStartEnabled ? 'translate-x-5' : 'translate-x-[2px]'} shadow-sm"></div>
               </button>
             </div>
@@ -698,7 +835,7 @@
                 <p class="text-xs font-semibold text-white/90">창 위치 잠금 (이동 방지)</p>
                 <p class="text-[9px] text-white/50 mt-1">원하는 곳에 둔 후 켜두면 항상 그 위치에 고정됨</p>
               </div>
-              <button class="w-10 h-5 rounded-full transition-colors {isWindowLocked ? 'bg-apple-blue' : 'bg-white/20'} relative" on:click={toggleWindowLock}>
+              <button class="w-10 h-5 rounded-full transition-colors {isWindowLocked ? 'bg-apple-blue' : 'bg-white/20'} relative" on:click={toggleWindowLock} aria-label="창 위치 잠금 전환">
                 <div class="absolute w-4 h-4 bg-white rounded-full top-[2px] transition-transform {isWindowLocked ? 'translate-x-5' : 'translate-x-[2px]'} shadow-sm"></div>
               </button>
             </div>
@@ -768,7 +905,7 @@
 </div>
 
 {#if isLicenseOpen}
-  <div class="fixed inset-0 z-[60] flex items-center justify-center p-5 bg-black/70 backdrop-blur-md" on:click|self={() => isLicenseOpen = false}>
+  <div class="fixed inset-0 z-[60] flex items-center justify-center p-5 bg-black/70 backdrop-blur-md" role="presentation" on:click|self={() => isLicenseOpen = false}>
     <div class="w-full max-w-sm max-h-[80vh] bg-[#0E0E10] border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden">
       <div class="flex items-center justify-between p-4 border-b border-white/5 bg-white/5">
         <div>
@@ -820,7 +957,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 <!-- 시그널 패스 내부 모달 -->
 {#if isSignalModalOpen}
-  <div class="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-200" on:mousedown|self={() => isSignalModalOpen = false}>
+  <div class="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-200" role="presentation" on:mousedown|self={() => isSignalModalOpen = false}>
     <div class="w-full h-full max-w-sm max-h-[660px] bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
       
       <!-- 헤더 영역 -->
@@ -828,7 +965,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         <h2 class="text-lg font-bold text-white tracking-wide">
           {signalModalTarget === 'earphone' ? 'Earphone Signal Path' : 'Woofer Signal Path'}
         </h2>
-        <button on:click={() => isSignalModalOpen = false} class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer">
+        <button on:click={() => isSignalModalOpen = false} aria-label="시그널 패스 닫기" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>
@@ -847,7 +984,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 <!-- 고급 설정 내부 모달 -->
 {#if isDspModalOpen}
-  <div class="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-200" on:mousedown|self={() => isDspModalOpen = false}>
+  <div class="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-200" role="presentation" on:mousedown|self={() => isDspModalOpen = false}>
     <div class="w-full h-full max-w-lg max-h-[700px] bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
       
       <!-- 헤더 영역 -->
@@ -855,7 +992,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         <h2 class="text-lg font-bold text-white tracking-wide">
           {dspModalTarget === 'earphone' ? '고급 설정 (이어폰)' : '고급 설정 (서브 우퍼)'}
         </h2>
-        <button on:click={() => isDspModalOpen = false} class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer">
+        <button on:click={() => isDspModalOpen = false} aria-label="고급 설정 닫기" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>

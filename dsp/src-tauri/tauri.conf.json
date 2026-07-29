@@ -1,11 +1,11 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "VesperDSP",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "identifier": "com.vesper.dsp",
   "build": {
     "beforeDevCommand": "pnpm dev",
-    "devUrl": "http://localhost:5173",
+    "devUrl": "http://localhost:15173",
     "beforeBuildCommand": "pnpm build",
     "frontendDist": "../build"
   },
@@ -14,7 +14,7 @@
       {
         "title": "Vesper DSP",
         "width": 360,
-        "height": 850,
+        "height": 800,
         "resizable": false,
         "decorations": false,
         "transparent": true,
@@ -22,7 +22,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost http://localhost:* ws://localhost:* https://api.github.com https://raw.githubusercontent.com; img-src 'self' asset: http://asset.localhost data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-src 'self'"
     }
   },
   "plugins": {

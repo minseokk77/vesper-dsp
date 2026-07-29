@@ -8,7 +8,7 @@ use ringbuf::{
 use rubato::{
     Resampler, SincFixedIn, SincInterpolationParameters, SincInterpolationType, WindowFunction,
 };
-use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::Emitter;
@@ -16,9 +16,61 @@ use tauri::Emitter;
 static IS_RUNNING: Lazy<Arc<AtomicBool>> = Lazy::new(|| Arc::new(AtomicBool::new(false)));
 static LAST_CLIP_TIME: Lazy<AtomicI64> = Lazy::new(|| AtomicI64::new(0));
 static STREAMS: Lazy<Mutex<Vec<cpal::Stream>>> = Lazy::new(|| Mutex::new(Vec::new()));
+static ENGINE_TRANSITION: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+static INPUT_OVERRUNS: AtomicU64 = AtomicU64::new(0);
+static OUTPUT_OVERRUNS: AtomicU64 = AtomicU64::new(0);
+static OUTPUT_UNDERRUNS: AtomicU64 = AtomicU64::new(0);
 
 pub static EARPHONE_MUTED: AtomicBool = AtomicBool::new(false);
 pub static SPEAKER_MUTED: AtomicBool = AtomicBool::new(false);
+
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct EngineStatus {
+    pub running: bool,
+    pub input_overruns: u64,
+    pub output_overruns: u64,
+    pub output_underruns: u64,
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
+struct EngineError {
+    stage: String,
+    message: String,
+}
+
+struct EngineStartGuard {
+    armed: bool,
+}
+
+impl Drop for EngineStartGuard {
+    fn drop(&mut self) {
+        if self.armed {
+            IS_RUNNING.store(false, Ordering::SeqCst);
+        }
+    }
+}
+
+pub fn get_engine_status() -> EngineStatus {
+    EngineStatus {
+        running: IS_RUNNING.load(Ordering::SeqCst),
+        input_overruns: INPUT_OVERRUNS.load(Ordering::Relaxed),
+        output_overruns: OUTPUT_OVERRUNS.load(Ordering::Relaxed),
+        output_underruns: OUTPUT_UNDERRUNS.load(Ordering::Relaxed),
+    }
+}
+
+fn report_stream_error(app: &tauri::AppHandle, stage: &str, error: impl std::fmt::Display) {
+    IS_RUNNING.store(false, Ordering::SeqCst);
+    let message = error.to_string();
+    eprintln!("{stage} stream error: {message}");
+    let _ = app.emit(
+        "engine-error",
+        EngineError {
+            stage: stage.to_string(),
+            message,
+        },
+    );
+}
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct EqBand {
@@ -258,11 +310,16 @@ pub fn start_audio_sync(
     earphone_filter: &str,
     speaker_filter: &str,
 ) -> Result<(), String> {
-    if IS_RUNNING.load(Ordering::SeqCst) {
-        let _ = stop_audio_sync();
-    }
-
+    let _transition = ENGINE_TRANSITION
+        .lock()
+        .map_err(|_| "Audio engine transition lock poisoned")?;
+    stop_audio_sync_inner()?;
+    std::thread::sleep(std::time::Duration::from_millis(75));
+    INPUT_OVERRUNS.store(0, Ordering::Relaxed);
+    OUTPUT_OVERRUNS.store(0, Ordering::Relaxed);
+    OUTPUT_UNDERRUNS.store(0, Ordering::Relaxed);
     IS_RUNNING.store(true, Ordering::SeqCst);
+    let mut start_guard = EngineStartGuard { armed: true };
 
     let host = get_host();
     let (source_dev, is_source_input) = match find_device(&host, source_name) {
@@ -329,7 +386,6 @@ pub fn start_audio_sync(
 
     macro_rules! build_output {
         ($dev:expr, $cfg:expr, $cons:expr, $type:ty, $cvt:expr, $is_woofer:expr, $app_handle:expr, $target_name:expr) => {{
-            let err_fn = |err| eprintln!("Output error: {}", err);
             let mut cons = $cons;
             let config_into: cpal::StreamConfig = $cfg.clone().into();
 
@@ -389,12 +445,21 @@ pub fn start_audio_sync(
 
             let app = $app_handle.clone();
             let target = $target_name.to_string();
+            let error_app = $app_handle.clone();
+            let error_target = target.clone();
+            let err_fn = move |error| report_stream_error(&error_app, &error_target, error);
 
             $dev.build_output_stream(
                 config_into,
                 move |data: &mut [$type], _: &cpal::OutputCallbackInfo| {
                     for sample in data.iter_mut() {
-                        let mut raw = cons.try_pop().unwrap_or(0.0f64);
+                        let mut raw = match cons.try_pop() {
+                            Some(sample) => sample,
+                            None => {
+                                OUTPUT_UNDERRUNS.fetch_add(1, Ordering::Relaxed);
+                                0.0
+                            }
+                        };
 
                         if $is_woofer && lpf_slope > 0 {
                             let is_left = channel % 2 == 0;
@@ -653,7 +718,9 @@ pub fn start_audio_sync(
                                 } else {
                                     out[in_ch][i]
                                 };
-                                let _ = prod_ear.try_push(val);
+                                if prod_ear.try_push(val).is_err() {
+                                    OUTPUT_OVERRUNS.fetch_add(1, Ordering::Relaxed);
+                                }
                             }
                         }
                     }
@@ -666,7 +733,9 @@ pub fn start_audio_sync(
                             } else {
                                 in_buffer[in_ch][i]
                             };
-                            let _ = prod_ear.try_push(val);
+                            if prod_ear.try_push(val).is_err() {
+                                OUTPUT_OVERRUNS.fetch_add(1, Ordering::Relaxed);
+                            }
                         }
                     }
                 }
@@ -682,7 +751,9 @@ pub fn start_audio_sync(
                                 } else {
                                     out[in_ch][i]
                                 };
-                                let _ = prod_spk.try_push(val);
+                                if prod_spk.try_push(val).is_err() {
+                                    OUTPUT_OVERRUNS.fetch_add(1, Ordering::Relaxed);
+                                }
                             }
                         }
                     }
@@ -695,7 +766,9 @@ pub fn start_audio_sync(
                             } else {
                                 in_buffer[in_ch][i]
                             };
-                            let _ = prod_spk.try_push(val);
+                            if prod_spk.try_push(val).is_err() {
+                                OUTPUT_OVERRUNS.fetch_add(1, Ordering::Relaxed);
+                            }
                         }
                     }
                 }
@@ -707,7 +780,8 @@ pub fn start_audio_sync(
 
     macro_rules! build_capture {
         ($type:ty, $cvt:expr) => {{
-            let err_fn = |err| eprintln!("capture error: {}", err);
+            let error_app = app_handle.clone();
+            let err_fn = move |error| report_stream_error(&error_app, "input", error);
             let config_into: cpal::StreamConfig = source_config.clone().into();
 
             source_dev
@@ -715,7 +789,9 @@ pub fn start_audio_sync(
                     config_into,
                     move |data: &[$type], _: &cpal::InputCallbackInfo| {
                         for &s in data {
-                            let _ = prod_in.try_push($cvt(s) * headroom_gain);
+                            if prod_in.try_push($cvt(s) * headroom_gain).is_err() {
+                                INPUT_OVERRUNS.fetch_add(1, Ordering::Relaxed);
+                            }
                         }
                     },
                     err_fn,
@@ -751,20 +827,29 @@ pub fn start_audio_sync(
         e.to_string()
     })?;
 
-    let mut streams = STREAMS.lock().unwrap();
+    let mut streams = STREAMS.lock().map_err(|_| "Audio stream lock poisoned")?;
     streams.push(source_stream);
     streams.push(ear_stream);
     streams.push(spk_stream);
+    start_guard.armed = false;
 
     Ok(())
 }
 
 pub fn stop_audio_sync() -> Result<(), String> {
-    if IS_RUNNING.load(Ordering::SeqCst) {
-        let mut streams = STREAMS.lock().unwrap();
-        streams.clear();
-        IS_RUNNING.store(false, Ordering::SeqCst);
-        println!("Audio sync stopped.");
+    let _transition = ENGINE_TRANSITION
+        .lock()
+        .map_err(|_| "Audio engine transition lock poisoned")?;
+    stop_audio_sync_inner()
+}
+
+fn stop_audio_sync_inner() -> Result<(), String> {
+    IS_RUNNING.store(false, Ordering::SeqCst);
+    let mut streams = STREAMS.lock().map_err(|_| "Audio stream lock poisoned")?;
+    for stream in streams.iter() {
+        let _ = stream.pause();
     }
+    streams.clear();
+    println!("Audio sync stopped.");
     Ok(())
 }

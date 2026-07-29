@@ -9,16 +9,21 @@ use ringbuf::{
 use rubato::{
     Resampler, SincFixedIn, SincInterpolationParameters, SincInterpolationType, WindowFunction,
 };
-use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
+use std::thread::JoinHandle;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::Emitter;
 
 static IS_RUNNING: Lazy<Arc<AtomicBool>> = Lazy::new(|| Arc::new(AtomicBool::new(false)));
 static LAST_CLIP_TIME: Lazy<AtomicI64> = Lazy::new(|| AtomicI64::new(0));
 static STREAMS: Lazy<Mutex<Vec<cpal::Stream>>> = Lazy::new(|| Mutex::new(Vec::new()));
+static WORKER_THREAD: Lazy<Mutex<Option<JoinHandle<()>>>> = Lazy::new(|| Mutex::new(None));
 static ENGINE_TRANSITION: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 static STREAM_INFO: Lazy<Mutex<Option<StreamInfo>>> = Lazy::new(|| Mutex::new(None));
+static INPUT_OVERRUNS: AtomicU64 = AtomicU64::new(0);
+static OUTPUT_OVERRUNS: AtomicU64 = AtomicU64::new(0);
+static OUTPUT_UNDERRUNS: AtomicU64 = AtomicU64::new(0);
 
 pub static OUTPUT_MUTED: AtomicBool = AtomicBool::new(false);
 pub static OUTPUT_EQ_PROFILE: Lazy<Arc<Mutex<EqProfile>>> =
@@ -56,32 +61,48 @@ pub struct StreamInfo {
     pub output_channels: usize,
 }
 
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct EngineStatus {
+    pub running: bool,
+    pub input_overruns: u64,
+    pub output_overruns: u64,
+    pub output_underruns: u64,
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
+struct EngineError {
+    stage: String,
+    message: String,
+}
+
 pub fn get_current_stream_info() -> Option<StreamInfo> {
     STREAM_INFO.lock().ok().and_then(|info| info.clone())
 }
 
-fn get_host(_is_asio: bool) -> cpal::Host {
-    cpal::default_host()
+pub fn get_engine_status() -> EngineStatus {
+    EngineStatus {
+        running: IS_RUNNING.load(Ordering::SeqCst),
+        input_overruns: INPUT_OVERRUNS.load(Ordering::Relaxed),
+        output_overruns: OUTPUT_OVERRUNS.load(Ordering::Relaxed),
+        output_underruns: OUTPUT_UNDERRUNS.load(Ordering::Relaxed),
+    }
 }
 
-pub fn get_available_devices(is_asio: bool) -> Vec<String> {
-    let host = get_host(is_asio);
-    let mut device_names = Vec::new();
+fn report_stream_error(app: &tauri::AppHandle, stage: &str, error: impl std::fmt::Display) {
+    IS_RUNNING.store(false, Ordering::SeqCst);
+    let message = error.to_string();
+    eprintln!("{stage} stream error: {message}");
+    let _ = app.emit(
+        "engine-error",
+        EngineError {
+            stage: stage.to_string(),
+            message,
+        },
+    );
+}
 
-    if let Ok(devices) = host.output_devices() {
-        for device in devices {
-            device_names.push(device.to_string());
-        }
-    }
-    if let Ok(devices) = host.input_devices() {
-        for device in devices {
-            let name = device.to_string();
-            if !device_names.contains(&name) {
-                device_names.push(name);
-            }
-        }
-    }
-    device_names
+fn get_host(_is_asio: bool) -> cpal::Host {
+    cpal::default_host()
 }
 
 fn is_virtual_cable_device(name: &str) -> bool {
@@ -107,11 +128,7 @@ pub fn get_source_devices(is_asio: bool) -> Vec<String> {
 pub fn get_output_devices(is_asio: bool) -> Vec<String> {
     let host = get_host(is_asio);
     host.output_devices()
-        .map(|devices| {
-            devices
-                .map(|device| device.to_string())
-                .collect()
-        })
+        .map(|devices| devices.map(|device| device.to_string()).collect())
         .unwrap_or_default()
 }
 
@@ -189,7 +206,11 @@ fn find_input_config_with_target(
         .collect::<Vec<_>>();
     configs.sort_by_key(|config| {
         (
-            if config.sample_format() == cpal::SampleFormat::I32 { 0 } else { 1 },
+            if config.sample_format() == cpal::SampleFormat::I32 {
+                0
+            } else {
+                1
+            },
             std::cmp::Reverse(config.max_sample_rate()),
         )
     });
@@ -257,7 +278,9 @@ fn find_output_config_with_target(
                 let Some(format) = sample_format_value(config.sample_format()) else {
                     return false;
                 };
-                output_sample_format.map(|wanted| format == wanted).unwrap_or(true)
+                output_sample_format
+                    .map(|wanted| format == wanted)
+                    .unwrap_or(true)
             })
             .collect::<Vec<_>>();
         configs.sort_by_key(|config| std::cmp::Reverse(config.max_sample_rate()));
@@ -315,11 +338,13 @@ pub fn get_device_bit_depth(device_name: &str, is_asio: bool) -> Result<String, 
         let mut max_int_bit = 0;
 
         let supported_configs: Vec<_> = if is_input {
-            device.supported_input_configs()
+            device
+                .supported_input_configs()
                 .map(|iter| iter.collect())
                 .unwrap_or_default()
         } else {
-            device.supported_output_configs()
+            device
+                .supported_output_configs()
                 .map(|iter| iter.collect())
                 .unwrap_or_default()
         };
@@ -327,11 +352,19 @@ pub fn get_device_bit_depth(device_name: &str, is_asio: bool) -> Result<String, 
         for sc in supported_configs {
             match sc.sample_format() {
                 cpal::SampleFormat::I16 => {
-                    if max_int_bit < 16 { max_int_bit = 16; }
+                    if max_int_bit < 16 {
+                        max_int_bit = 16;
+                    }
                 }
                 cpal::SampleFormat::I32 => {
-                    let bit = if device_name.to_lowercase().contains("fiio") { 32 } else { 24 };
-                    if max_int_bit < bit { max_int_bit = bit; }
+                    let bit = if device_name.to_lowercase().contains("fiio") {
+                        32
+                    } else {
+                        24
+                    };
+                    if max_int_bit < bit {
+                        max_int_bit = bit;
+                    }
                 }
                 _ => {}
             }
@@ -413,6 +446,7 @@ pub fn update_output_eq_profile(profile: EqProfile) {
     EQ_PROFILE_CHANGED.store(true, Ordering::Relaxed);
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn start_dsp_engine(
     app_handle: tauri::AppHandle,
     source_name: &str,
@@ -427,13 +461,14 @@ pub fn start_dsp_engine(
         .lock()
         .map_err(|_| "Audio engine transition lock poisoned")?;
     stop_dsp_engine_inner()?;
-    std::thread::sleep(std::time::Duration::from_millis(75));
+    INPUT_OVERRUNS.store(0, Ordering::Relaxed);
+    OUTPUT_OVERRUNS.store(0, Ordering::Relaxed);
+    OUTPUT_UNDERRUNS.store(0, Ordering::Relaxed);
 
     let host = get_host(is_asio);
     let (source_device, source_is_input) =
         find_source_device(&host, source_name).ok_or("Audio source device not found")?;
-    let output_device = find_output_device(&host, output_name)
-        .ok_or("Output device not found")?;
+    let output_device = find_output_device(&host, output_name).ok_or("Output device not found")?;
     let output_config =
         find_output_config_with_target(&output_device, target_sample_rate, output_sample_format)?;
 
@@ -451,8 +486,10 @@ pub fn start_dsp_engine(
     let input_channels = source_config.channels() as usize;
     let output_channels = output_config.channels() as usize;
     let chunk_size = 1024;
-    let input_capacity = (input_rate * input_channels as f64 * 2.0) as usize;
-    let output_capacity = (output_rate * output_channels as f64 * 2.0) as usize;
+    let input_capacity =
+        ((input_rate as usize / 4) * input_channels).max(chunk_size * input_channels * 4);
+    let output_capacity =
+        ((output_rate as usize / 4) * output_channels).max(chunk_size * output_channels * 4);
 
     let input_ring = HeapRb::<f64>::new(input_capacity);
     let (mut input_producer, mut input_consumer) = input_ring.split();
@@ -464,10 +501,10 @@ pub fn start_dsp_engine(
         None
     } else {
         let (sinc_len, f_cutoff, oversampling_factor, window) = match filter_type {
-            "정밀한, 선형 위상" => (256, 0.96, 256, WindowFunction::BlackmanHarris2),
-            "정확한 최소 단계 (Minimum Phase)" => (128, 0.95, 128, WindowFunction::Hann),
-            "부드러움, 리니어 위상" => (96, 0.92, 96, WindowFunction::BlackmanHarris2),
-            _ => (64, 0.88, 64, WindowFunction::Hann),
+            "linear_precise" => (256, 0.96, 256, WindowFunction::BlackmanHarris2),
+            "linear_smooth" => (96, 0.92, 96, WindowFunction::BlackmanHarris2),
+            "phase_smooth" => (64, 0.88, 64, WindowFunction::Hann),
+            _ => (128, 0.95, 128, WindowFunction::Hann),
         };
         let params = SincInterpolationParameters {
             sinc_len,
@@ -490,16 +527,30 @@ pub fn start_dsp_engine(
 
     IS_RUNNING.store(true, Ordering::SeqCst);
     let running = IS_RUNNING.clone();
-    std::thread::spawn(move || {
+    let mut worker_slot = WORKER_THREAD
+        .lock()
+        .map_err(|_| "Audio worker lock poisoned")?;
+    let worker = std::thread::spawn(move || {
         let mut channels = vec![vec![0.0; chunk_size]; input_channels];
         let mut interleaved = vec![0.0; chunk_size * input_channels];
+        let has_resampler = resampler.is_some();
+        let max_output_frames = resampler
+            .as_ref()
+            .map(Resampler::output_frames_max)
+            .unwrap_or(chunk_size);
+        let mut resampled = resampler
+            .as_ref()
+            .map(|value| value.output_buffer_allocate(true))
+            .unwrap_or_default();
+        let mut output_interleaved = vec![0.0; max_output_frames * output_channels];
+
         while running.load(Ordering::SeqCst) {
             if input_consumer.occupied_len() < interleaved.len() {
                 std::thread::sleep(std::time::Duration::from_millis(1));
                 continue;
             }
-            for sample in &mut interleaved {
-                *sample = input_consumer.try_pop().unwrap_or_default();
+            if input_consumer.pop_slice(&mut interleaved) != interleaved.len() {
+                continue;
             }
             for frame in 0..chunk_size {
                 for channel in 0..input_channels {
@@ -507,28 +558,38 @@ pub fn start_dsp_engine(
                 }
             }
 
-            let output = match resampler.as_mut() {
-                Some(resampler) => match resampler.process(&channels, None) {
-                    Ok(output) => output,
-                    Err(error) => {
-                        eprintln!("Resampler processing error: {error}");
-                        continue;
+            let output_frames = match resampler.as_mut() {
+                Some(resampler) => {
+                    match resampler.process_into_buffer(&channels, &mut resampled, None) {
+                        Ok((_, frames)) => frames,
+                        Err(error) => {
+                            eprintln!("Resampler processing error: {error}");
+                            continue;
+                        }
                     }
-                },
-                None => channels.clone(),
+                }
+                None => chunk_size,
             };
-            for frame in 0..output[0].len() {
+            let output = if has_resampler { &resampled } else { &channels };
+            let muted = OUTPUT_MUTED.load(Ordering::Relaxed);
+            let sample_count = output_frames * output_channels;
+            for frame in 0..output_frames {
                 for channel in 0..output_channels {
-                    let sample = if OUTPUT_MUTED.load(Ordering::Relaxed) {
+                    output_interleaved[frame * output_channels + channel] = if muted {
                         0.0
                     } else {
                         output[channel % input_channels][frame]
                     };
-                    let _ = output_producer.try_push(sample);
                 }
+            }
+            let pushed = output_producer.push_slice(&output_interleaved[..sample_count]);
+            if pushed < sample_count {
+                OUTPUT_OVERRUNS.fetch_add((sample_count - pushed) as u64, Ordering::Relaxed);
             }
         }
     });
+    *worker_slot = Some(worker);
+    drop(worker_slot);
 
     fn i16_to_f64(sample: i16) -> f64 {
         sample as f64 / i16::MAX as f64
@@ -560,6 +621,7 @@ pub fn start_dsp_engine(
         ($sample:ty, $convert:expr) => {{
             let mut consumer = output_consumer;
             let app = app_handle.clone();
+            let error_app = app_handle.clone();
             let mut channel = 0usize;
             let channel_count = output_channels;
             let profile = OUTPUT_EQ_PROFILE
@@ -610,7 +672,9 @@ pub fn start_dsp_engine(
                                             "high_pass" => biquad::Type::HighPass,
                                             "band_pass" => biquad::Type::BandPass,
                                             "band_stop" | "notch" => biquad::Type::Notch,
-                                            "peaking" | "peak" => biquad::Type::PeakingEQ(band.gain_db),
+                                            "peaking" | "peak" => {
+                                                biquad::Type::PeakingEQ(band.gain_db)
+                                            }
                                             _ => biquad::Type::PeakingEQ(band.gain_db),
                                         };
                                         if let Ok(coefficients) = Coefficients::<f64>::from_params(
@@ -619,8 +683,10 @@ pub fn start_dsp_engine(
                                             band.frequency.hz(),
                                             band.q,
                                         ) {
-                                            left_filters.push(DirectForm1::<f64>::new(coefficients));
-                                            right_filters.push(DirectForm1::<f64>::new(coefficients));
+                                            left_filters
+                                                .push(DirectForm1::<f64>::new(coefficients));
+                                            right_filters
+                                                .push(DirectForm1::<f64>::new(coefficients));
                                         }
                                     }
                                 }
@@ -631,8 +697,16 @@ pub fn start_dsp_engine(
                             }
                         }
 
+                        let mut underruns = 0_u64;
+                        let mut clipped = false;
                         for target in data {
-                            let mut sample = consumer.try_pop().unwrap_or_default();
+                            let mut sample = match consumer.try_pop() {
+                                Some(sample) => sample,
+                                None => {
+                                    underruns += 1;
+                                    0.0
+                                }
+                            };
                             if is_eq_enabled {
                                 sample *= preamp_gain;
                                 let filters = if channel % 2 == 0 {
@@ -644,21 +718,25 @@ pub fn start_dsp_engine(
                                     sample = filter.run(sample);
                                 }
                             }
-                            if sample > 1.0 || sample < -1.0 {
-                                let now = SystemTime::now()
-                                    .duration_since(UNIX_EPOCH)
-                                    .unwrap_or_default()
-                                    .as_millis() as i64;
-                                if now - LAST_CLIP_TIME.load(Ordering::Relaxed) > 200 {
-                                    LAST_CLIP_TIME.store(now, Ordering::Relaxed);
-                                    let _ = app.emit("clipping-detected", "output");
-                                }
-                            }
+                            clipped |= !(-1.0..=1.0).contains(&sample);
                             *target = $convert(sample);
                             channel = (channel + 1) % channel_count;
                         }
+                        if underruns > 0 {
+                            OUTPUT_UNDERRUNS.fetch_add(underruns, Ordering::Relaxed);
+                        }
+                        if clipped {
+                            let now = SystemTime::now()
+                                .duration_since(UNIX_EPOCH)
+                                .unwrap_or_default()
+                                .as_millis() as i64;
+                            if now - LAST_CLIP_TIME.load(Ordering::Relaxed) > 200 {
+                                LAST_CLIP_TIME.store(now, Ordering::Relaxed);
+                                let _ = app.emit("clipping-detected", "output");
+                            }
+                        }
                     },
-                    |error| eprintln!("Output stream error: {error}"),
+                    move |error| report_stream_error(&error_app, "output", error),
                     None,
                 )
                 .map_err(|error| format!("Output stream error: {error}"))
@@ -683,15 +761,22 @@ pub fn start_dsp_engine(
 
     macro_rules! build_input {
         ($sample:ty, $convert:expr) => {{
+            let error_app = app_handle.clone();
             source_device
                 .build_input_stream(
                     source_config.clone().into(),
                     move |data: &[$sample], _| {
+                        let mut overruns = 0_u64;
                         for sample in data {
-                            let _ = input_producer.try_push($convert(*sample) * gain);
+                            if input_producer.try_push($convert(*sample) * gain).is_err() {
+                                overruns += 1;
+                            }
+                        }
+                        if overruns > 0 {
+                            INPUT_OVERRUNS.fetch_add(overruns, Ordering::Relaxed);
                         }
                     },
-                    |error| eprintln!("Input stream error: {error}"),
+                    move |error| report_stream_error(&error_app, "input", error),
                     None,
                 )
                 .map_err(|error| format!("Input stream error: {error}"))
@@ -732,11 +817,15 @@ pub fn start_dsp_engine(
     if let Ok(mut info) = STREAM_INFO.lock() {
         *info = Some(StreamInfo {
             source_sample_rate: input_rate as u32,
-            source_bit_depth: sample_format_label(source_format).unwrap_or("Unknown").to_string(),
+            source_bit_depth: sample_format_label(source_format)
+                .unwrap_or("Unknown")
+                .to_string(),
             source_channels: input_channels,
             output_sample_rate: output_rate as u32,
-            output_bit_depth: sample_format_label(output_format).unwrap_or("Unknown").to_string(),
-            output_channels: output_channels,
+            output_bit_depth: sample_format_label(output_format)
+                .unwrap_or("Unknown")
+                .to_string(),
+            output_channels,
         });
     }
     let _ = app_handle.emit("dsp-stream-info", ());
@@ -754,10 +843,24 @@ pub fn stop_dsp_engine() -> Result<(), String> {
 
 fn stop_dsp_engine_inner() -> Result<(), String> {
     IS_RUNNING.store(false, Ordering::SeqCst);
-    let mut streams = STREAMS.lock().map_err(|_| "Audio stream lock poisoned")?;
-    for stream in streams.iter() {
-        let _ = stream.pause();
+    {
+        let mut streams = STREAMS.lock().map_err(|_| "Audio stream lock poisoned")?;
+        for stream in streams.iter() {
+            let _ = stream.pause();
+        }
+        streams.clear();
     }
-    streams.clear();
+    if let Some(worker) = WORKER_THREAD
+        .lock()
+        .map_err(|_| "Audio worker lock poisoned")?
+        .take()
+    {
+        worker
+            .join()
+            .map_err(|_| "Audio worker thread panicked".to_string())?;
+    }
+    if let Ok(mut info) = STREAM_INFO.lock() {
+        *info = None;
+    }
     Ok(())
 }

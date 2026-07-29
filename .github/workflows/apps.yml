@@ -1,0 +1,69 @@
+name: Desktop Apps CI
+
+on:
+  push:
+    branches: ["master"]
+    paths:
+      - "dsp/**"
+      - "woofer/**"
+      - "vesper-dsp/updater.json"
+      - "vesper-woofer/updater.json"
+      - "scripts/verify-app-versions.mjs"
+      - ".github/workflows/apps.yml"
+  pull_request:
+    paths:
+      - "dsp/**"
+      - "woofer/**"
+      - "vesper-dsp/updater.json"
+      - "vesper-woofer/updater.json"
+      - "scripts/verify-app-versions.mjs"
+      - ".github/workflows/apps.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        app: [dsp, woofer]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: ${{ matrix.app }}/pnpm-lock.yaml
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.app }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Check frontend
+        working-directory: ${{ matrix.app }}
+        run: pnpm check
+
+      - name: Build frontend
+        working-directory: ${{ matrix.app }}
+        run: pnpm build
+
+      - name: Check Rust
+        working-directory: ${{ matrix.app }}/src-tauri
+        run: cargo check --locked
+
+      - name: Verify release metadata
+        if: matrix.app == 'dsp'
+        run: node scripts/verify-app-versions.mjs
