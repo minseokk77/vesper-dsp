@@ -1,0 +1,6 @@
+[submodule "vesper-dsp"]
+	path = vesper-dsp
+	url = https://github.com/minseokk77/vesper-dsp.git
+[submodule "vesper-woofer"]
+	path = vesper-woofer
+	url = https://github.com/minseokk77/vesper-woofer.git
