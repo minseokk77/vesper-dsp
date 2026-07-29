@@ -221,7 +221,10 @@ fn main() {
             stop_dsp,
             set_mute,
             apply_output_eq_profile,
-            get_stream_info
+            get_stream_info,
+            enable_priority_autostart,
+            disable_priority_autostart,
+            is_priority_autostart_enabled
         ])
         .run(tauri::generate_context!())
         .expect("error while running Vesper DSP");
@@ -246,5 +249,83 @@ fn show_main_window(app: &tauri::AppHandle) {
 fn emit_main<S: serde::Serialize + Clone>(app: &tauri::AppHandle, event: &str, payload: S) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.emit(event, payload);
+    }
+}
+
+#[tauri::command]
+fn enable_priority_autostart() -> Result<(), String> {
+    use std::os::windows::process::CommandExt;
+    let appdata = std::env::var("APPDATA").map_err(|e| format!("APPDATA 환경 변수 찾기 실패: {e}"))?;
+    let lnk_path = std::path::PathBuf::from(&appdata)
+        .join("Microsoft")
+        .join("Windows")
+        .join("Start Menu")
+        .join("Programs")
+        .join("Startup")
+        .join("VesperDSP.lnk");
+
+    let exe = std::env::current_exe().map_err(|e| format!("실행 파일 경로 오류: {e}"))?;
+    let exe_str = exe.to_string_lossy().to_string();
+
+    let ps_script = format!(
+        "$WshShell = New-Object -ComObject WScript.Shell; \
+         $Shortcut = $WshShell.CreateShortcut('{}'); \
+         $Shortcut.TargetPath = '{}'; \
+         $Shortcut.Arguments = '--autostart'; \
+         $Shortcut.WindowStyle = 7; \
+         $Shortcut.Save()",
+        lnk_path.to_string_lossy(),
+        exe_str
+    );
+
+    std::process::Command::new("powershell")
+        .args(&["-NoProfile", "-Command", &ps_script])
+        .creation_flags(0x08000000)
+        .output()
+        .map_err(|e| format!("PowerShell 바로가기 생성 실패: {e}"))?;
+
+    let reg_script = "\
+        New-Item -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize' -Force | Out-Null; \
+        Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize' -Name 'StartupDelayInMSec' -Value 0 -Type DWord";
+    
+    let _ = std::process::Command::new("powershell")
+        .args(&["-NoProfile", "-Command", reg_script])
+        .creation_flags(0x08000000)
+        .output();
+
+    Ok(())
+}
+
+#[tauri::command]
+fn disable_priority_autostart() -> Result<(), String> {
+    let appdata = std::env::var("APPDATA").map_err(|e| format!("APPDATA 환경 변수 찾기 실패: {e}"))?;
+    let lnk_path = std::path::PathBuf::from(&appdata)
+        .join("Microsoft")
+        .join("Windows")
+        .join("Start Menu")
+        .join("Programs")
+        .join("Startup")
+        .join("VesperDSP.lnk");
+
+    if lnk_path.exists() {
+        std::fs::remove_file(lnk_path).map_err(|e| format!("바로가기 삭제 실패: {e}"))?;
+    }
+    
+    Ok(())
+}
+
+#[tauri::command]
+fn is_priority_autostart_enabled() -> bool {
+    if let Ok(appdata) = std::env::var("APPDATA") {
+        let lnk_path = std::path::PathBuf::from(&appdata)
+            .join("Microsoft")
+            .join("Windows")
+            .join("Start Menu")
+            .join("Programs")
+            .join("Startup")
+            .join("VesperDSP.lnk");
+        lnk_path.exists()
+    } else {
+        false
     }
 }

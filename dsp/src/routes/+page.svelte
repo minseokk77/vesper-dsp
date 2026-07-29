@@ -6,7 +6,6 @@
   import { getVersion } from '@tauri-apps/api/app';
   import { relaunch } from '@tauri-apps/plugin-process';
   import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-  import { enable as enableAutoStart, disable as disableAutoStart, isEnabled as isAutoStartEnabled } from '@tauri-apps/plugin-autostart';
   import { check as checkUpdate } from '@tauri-apps/plugin-updater';
   import CustomSelect from '$lib/components/CustomSelect.svelte';
 
@@ -313,7 +312,7 @@
   // Settings Functions
   async function checkAutoStartStatus() {
     try {
-      autoStartEnabled = await isAutoStartEnabled();
+      autoStartEnabled = await invoke('is_priority_autostart_enabled');
     } catch (e) {
       console.error('Failed to check autostart:', e);
     }
@@ -322,10 +321,10 @@
   async function toggleAutoStart() {
     try {
       if (autoStartEnabled) {
-        await disableAutoStart();
+        await invoke('disable_priority_autostart');
         autoStartEnabled = false;
       } else {
-        await enableAutoStart();
+        await invoke('enable_priority_autostart');
         autoStartEnabled = true;
       }
     } catch (e) {
