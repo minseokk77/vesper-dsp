@@ -26,12 +26,15 @@ jobs:
   verify:
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
         app: [dsp, woofer]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
