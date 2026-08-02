@@ -1,0 +1,14 @@
+[package]
+name = "tauri-plugin-content-access"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.77.2"
+links = "tauri-plugin-content-access"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+tauri = "2.11.3"
+thiserror = "2"
+
+[build-dependencies]
+tauri-plugin = { version = "2.6.3", features = ["build"] }
