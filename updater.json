@@ -1,11 +1,11 @@
 {
-  "version": "0.0.19",
-  "notes": "Vesper DSP v0.0.19: Improved real-time resampling stability and performance, preserved DSP settings across restarts, and refined the compact no-scroll interface.",
-  "pub_date": "2026-07-29T09:16:31Z",
+  "version": "0.0.20",
+  "notes": "Vesper DSP v0.0.20: Fixed an issue where the app would crash on duplicate execution (HotKey already registered error). Firefox extension syncing functionality reverted.",
+  "pub_date": "2026-08-03T02:40:00Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.19/VesperDSP_0.0.19_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmFIeFpDbWRVWXppZ1RzWk90eWVMZWxjK01IMG9EUVgvVDdidTdYRUMvTFhxTDVSQWlQR0xtL0t2M3l3bTJYVmJFM3ZGYnJycWhTbzA4TXM4eWg1VlEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1MzE2Mjg0CWZpbGU6VmVzcGVyRFNQXzAuMC4xOV94NjQtc2V0dXAuZXhlCi9vSGZBcVF6bm9OK2F6a3JGZlQ5SncyL0QyU1RJQmp6YmpVK1AzUzJUckJFNzQ1dHArMEhpMTVVSTBrOU5RTlM4d0VWMHJITFRDUzJEOFRyaDUrK0JnPT0K"
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.20/VesperDSP_0.0.20_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dldZcVFHSHVUTDZzT21yS1ptWG1yano2aFBwdXVhMEkxL3hLUVhBRXJEVjYrbE9iaUx2b21kejVnWEhpQmx3dnNOcFhiSzJjQkxyMVJvakdlMW9MZWdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1NzI0OTQzCWZpbGU6VmVzcGVyRFNQXzAuMC4yMF94NjQtc2V0dXAuZXhlCkhOVE50MDZvN2hzVnRFekR2S2ppZ1NjUjA4anJVOHpmSmRvdEJWeExiWDlySGhBc2o2Q0o4T1pySk9ubU9FZEE3T0wvN3F2L0ZtaDc2ZXE1S2xnT0JRPT0K"
     }
   }
 }
