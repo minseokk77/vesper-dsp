@@ -49,7 +49,7 @@
   interface AutoEqResult { vendor: string; product: string; mode: 'opra' | 'spinorama'; }
   interface AutoEqTreeNode { path: string; }
   interface EqBandPayload { filter_type: string; frequency: number; gain_db: number; q: number; }
-  interface SavedAutoEq { vendor: string; product: string; mode: 'opra' | 'spinorama'; enabled: boolean; }
+  interface SavedAutoEq { vendor: string; product: string; mode: 'opra' | 'spinorama'; enabled: boolean; preamp_gain?: number; bands?: EqBandPayload[]; }
   interface StreamInfo {
     source_sample_rate: number;
     source_bit_depth: string;
@@ -296,7 +296,7 @@
       
       autoEqQuery = autoEqProduct;
       autoEqResults = [];
-      localStorage.setItem(`vesper_dsp_opra_${output}`, JSON.stringify({ mode: autoEqMode, vendor, product, enabled: autoEqEnabled }));
+      localStorage.setItem(`vesper_dsp_opra_${output}`, JSON.stringify({ mode: autoEqMode, vendor, product, enabled: autoEqEnabled, preamp_gain: preamp, bands }));
       
       await invoke('apply_output_eq_profile', {
         profile: { enabled: autoEqEnabled, preamp_gain: preamp, bands }
@@ -362,7 +362,9 @@
         vendor: parsed.vendor,
         product: parsed.product,
         mode: parsed.mode === 'spinorama' ? 'spinorama' : 'opra',
-        enabled: parsed.enabled === true
+        enabled: parsed.enabled === true,
+        preamp_gain: parsed.preamp_gain ?? 0,
+        bands: parsed.bands ?? []
       };
     } catch {
       return null;
@@ -533,21 +535,6 @@
     const h = localStorage.getItem('vesper_dsp_headroom'); if (h) headroomDb = Number(h);
     const clipping = localStorage.getItem('vesper_dsp_show_clipping'); if (clipping !== null) showClipping = clipping === 'true';
 
-    if (output) {
-      const opra = parseSavedAutoEq(localStorage.getItem(`vesper_dsp_opra_${output}`));
-      if (opra) {
-        autoEqEnabled = opra.enabled;
-        autoEqMode = opra.mode;
-        if (opra.product) {
-          autoEqProduct = autoEqMode === 'spinorama' ? opra.product : `${opra.vendor} · ${opra.product}`;
-          if (autoEqEnabled) {
-            if (opra.mode === 'opra') await loadAutoEqIndex();
-            await selectAutoEq(opra);
-          }
-        }
-      }
-    }
-
     settingsRestored = true;
 
     eventUnlisteners.push(await listen('clipping-detected', () => {
@@ -640,6 +627,10 @@
         }, 500); // 0.5초 디바운스 (슬라이더 조작 시 뚝뚝 끊김 방지)
       }
     }
+  }
+
+  $: if (settingsRestored && output) {
+    applySavedAutoEqForOutput(output);
   }
 </script>
 

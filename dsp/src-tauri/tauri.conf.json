@@ -12,13 +12,15 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Vesper DSP",
         "width": 360,
         "height": 800,
         "resizable": false,
         "decorations": false,
         "transparent": true,
-        "visible": false
+        "visible": true,
+        "center": true
       }
     ],
     "security": {
