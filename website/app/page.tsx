@@ -7,6 +7,7 @@ import { content, type Language } from "./content";
 const RELEASES = {
   dsp: "https://github.com/minseokk77/vesper-dsp/releases/latest",
   woofer: "https://github.com/minseokk77/vesper-woofer/releases/latest",
+  harness: "https://github.com/minseokk77/vesper-harness",
 };
 
 type ProductKey = keyof typeof RELEASES;
@@ -223,6 +224,42 @@ function ActualAppScreens({
           </button>
         </div>
       </figure>
+
+      <figure className="actual-app actual-app-harness" hidden={product !== "harness"}>
+        <div className="app-ui app-ui-harness" style={{ fontFamily: "monospace", backgroundColor: "#0a0a0a" }}>
+          <div className="app-titlebar" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.02)" }}>
+            <h3 style={{ textTransform: "none" }}>
+              Vesper Harness <span>v3.0</span>
+            </h3>
+            <div className="app-status active" style={{ color: "#facc15" }}>
+              <i style={{ backgroundColor: "#facc15" }} />
+              STANDBY
+            </div>
+            <WindowActions />
+          </div>
+
+          <div style={{ padding: "16px", color: "#d1d5db", fontSize: "12px", lineHeight: "1.6" }}>
+            <div style={{ color: "#60a5fa", fontWeight: "bold", marginBottom: "8px" }}>Vesper Harness V3.0 - 5-Stage Core Engine</div>
+            <div style={{ color: "#6b7280", marginBottom: "16px" }}>Type '/task [description]' to begin autonomous coding.</div>
+            
+            <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+              <span style={{ color: "#facc15" }}>Vesper&gt;</span>
+              <span style={{ color: "#ffffff" }}>/task Add a login modal</span>
+            </div>
+            
+            <div style={{ paddingLeft: "16px", borderLeft: "2px solid rgba(255,255,255,0.1)", display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div style={{ color: "#facc15" }}>🟡 [Stage 1: Analyze] Fetching context via MCP...</div>
+              <div style={{ color: "#9ca3af" }}>&nbsp;&nbsp;&nbsp;[MCP Client] ✅ Svelte + Tailwind Context loaded.</div>
+              
+              <div style={{ color: "#fb923c", marginTop: "8px" }}>🟠 [Stage 2: Risk Scan] Checking Tauri security...</div>
+              <div style={{ color: "#9ca3af" }}>&nbsp;&nbsp;&nbsp;[Tauri-Security] ✅ Safe to proceed.</div>
+              
+              <div style={{ color: "#60a5fa", marginTop: "8px" }}>🔵 [Stage 3: Plan] Generating Liquid Glass tokens...</div>
+              <div style={{ color: "#c084fc", marginTop: "8px" }}>🟣 [Stage 4: Execute] Booting Hermes Agent Sandbox...</div>
+            </div>
+          </div>
+        </div>
+      </figure>
     </div>
   );
 }
@@ -317,7 +354,7 @@ export default function Home() {
                   language === "ko" ? "Vesper 제품 선택" : "Choose a Vesper product"
                 }
               >
-                {(["dsp", "woofer"] as const).map((product) => (
+                {(["dsp", "woofer", "harness"] as const).map((product) => (
                   <button
                     key={product}
                     type="button"
@@ -327,13 +364,13 @@ export default function Home() {
                     onClick={() => setActiveProduct(product)}
                   >
                     <span>Vesper</span>
-                    <strong>{product === "dsp" ? "DSP" : "Woofer"}</strong>
+                    <strong>{product === "dsp" ? "DSP" : product === "woofer" ? "Woofer" : "Harness"}</strong>
                   </button>
                 ))}
               </div>
               <div className="selected-product-copy">
                 <span>
-                  {activeProduct === "dsp" ? "HEADPHONES + SPEAKERS" : "2.1 CHANNEL"}
+                  {activeProduct === "dsp" ? "HEADPHONES + SPEAKERS" : activeProduct === "woofer" ? "2.1 CHANNEL" : "AI ENGINE"}
                 </span>
                 <p>{selectedProduct.category}</p>
               </div>
@@ -401,6 +438,27 @@ export default function Home() {
             </ul>
             <a href={RELEASES.woofer}>
               {copy.products.woofer.action} <span aria-hidden="true">↗</span>
+            </a>
+          </article>
+
+          <article className="product-card harness-card">
+            <div className="card-orb orb-emerald" />
+            <div className="product-top">
+              <span className="product-icon">✦</span>
+              <span className="product-badge">AI ENGINE</span>
+            </div>
+            <div className="product-copy">
+              <p>{copy.products.harness.category}</p>
+              <h2>Vesper Harness</h2>
+              <span>{copy.products.harness.description}</span>
+            </div>
+            <ul className="feature-list">
+              {copy.products.harness.features.map((feature) => (
+                <li key={feature}>{feature}</li>
+              ))}
+            </ul>
+            <a href={RELEASES.harness}>
+              {copy.products.harness.action} <span aria-hidden="true">↗</span>
             </a>
           </article>
         </section>

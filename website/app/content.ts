@@ -13,12 +13,12 @@ export const content = {
     switchLabel: "Switch to English",
     switchText: "EN",
     hero: {
-      availability: "Windows 오디오 · 두 가지 정밀 도구",
-      titleLineOne: "PC SOUND.",
-      titleLineTwo: "TUNED TO YOUR SYSTEM.",
-      descriptionLineOne: "헤드폰·스피커 보정과 서브우퍼 타이밍을 더 정확하게.",
+      availability: "Windows 오디오 및 자율 코딩 · 세 가지 정밀 도구",
+      titleLineOne: "YOUR SYSTEM.",
+      titleLineTwo: "REFINED TO PERFECTION.",
+      descriptionLineOne: "헤드폰 보정, 서브우퍼 정렬, 그리고 자율 주행 AI 코딩까지.",
       descriptionLineTwo:
-        "필요한 제품을 선택하면 실제 인터페이스와 핵심 기능을 바로 확인할 수 있습니다.",
+        "필요한 도구를 선택하면 실제 인터페이스와 핵심 기능을 바로 확인할 수 있습니다.",
       primaryAction: "제품 비교하기",
       secondaryAction: "작동 방식 보기",
       note: "무료 · Windows 10/11 · x64",
@@ -40,9 +40,9 @@ export const content = {
       preamp: "프리앰프",
     },
     statement: {
-      label: "TWO APPS. ONE ECOSYSTEM.",
+      label: "THREE APPS. ONE ECOSYSTEM.",
       lineOne: "필요한 도구는 서로 달라도,",
-      lineTwo: "완성되는 소리는 하나입니다.",
+      lineTwo: "완벽한 환경은 하나입니다.",
       ariaLabel: "Vesper 소개",
     },
     products: {
@@ -67,6 +67,17 @@ export const content = {
           "독립 실행형 Rust 앱",
         ],
         action: "Woofer 다운로드",
+      },
+      harness: {
+        category: "AI 자율 주행 코딩 오케스트레이터",
+        description:
+          "Aider, SWE-agent 등 흩어진 강력한 AI 도구들을 완벽한 5-Stage 자율 워크플로우로 통합한 지능형 엔진입니다.",
+        features: [
+          "몰입형 3분할 TUI 대시보드",
+          "Ollama 기반 보안 취약점 스캔",
+          "에러 분석 및 지능형 롤백 복구",
+        ],
+        action: "Harness 설치 안내",
       },
     },
     experience: {
@@ -157,10 +168,10 @@ export const content = {
     switchLabel: "한국어로 전환",
     switchText: "KO",
     hero: {
-      availability: "Windows audio · two precision tools",
-      titleLineOne: "PC SOUND.",
-      titleLineTwo: "TUNED TO YOUR SYSTEM.",
-      descriptionLineOne: "Refine headphone, speaker, and subwoofer response.",
+      availability: "Windows audio & AI · three precision tools",
+      titleLineOne: "YOUR SYSTEM.",
+      titleLineTwo: "REFINED TO PERFECTION.",
+      descriptionLineOne: "Refine headphone response, subwoofer timing, and autonomous AI coding.",
       descriptionLineTwo:
         "Choose a product to see its real interface and core capabilities.",
       primaryAction: "Compare products",
@@ -184,9 +195,9 @@ export const content = {
       preamp: "Preamp",
     },
     statement: {
-      label: "TWO APPS. ONE ECOSYSTEM.",
+      label: "THREE APPS. ONE ECOSYSTEM.",
       lineOne: "Different tools for different needs.",
-      lineTwo: "One sound when they are done.",
+      lineTwo: "One perfect environment when they are done.",
       ariaLabel: "About Vesper",
     },
     products: {
@@ -211,6 +222,17 @@ export const content = {
           "Standalone Rust application",
         ],
         action: "Download Woofer",
+      },
+      harness: {
+        category: "Autonomous AI Coding Orchestrator",
+        description:
+          "Seamlessly integrates powerful AI tools like Aider and SWE-agent into a perfect 5-stage autonomous workflow.",
+        features: [
+          "Immersive 3-split TUI Dashboard",
+          "Ollama-based local security scans",
+          "Error analysis & intelligent rollback",
+        ],
+        action: "Get Harness via PNPM",
       },
     },
     experience: {
