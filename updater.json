@@ -4,8 +4,8 @@
   "pub_date": "2026-08-04T12:30:00Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.21/VesperDSP_0.0.21_x64-setup.nsis.zip",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmZ1SFFkZWpVUkFDVTZXemRkT2dFeERCRnd5OXBHckJ0S25nazVaWFh6MEpNMXcxQ2VoSjR6dVRkeldpNTU3RXZzMU5RWjliUWdMb0RxWGZiQzltRncwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1ODE0MDM0CWZpbGU6VmVzcGVyRFNQXzAuMC4yMV94NjQtc2V0dXAubnNpcy56aXAKUm81TkQ2MUM3alhxQjhKYzQvTm5yV2JUYXdpb3N0d1lsbTZEbTU3RlFPejhNU21BYjBzYkR1aUQrTHQ3cmd0V3dIK3RldEZsVVptU0ZXVDBkNzdvQnc9PQo="
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.21/VesperDSP_0.0.21_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlduQWNlYy95b2dTcGZkM2JTL1RSeTFROEx3anUvNGJ4RSt5WnFEcS9MNlcwMGpHWElvK3Bpb0Y0S3U2N05ya1hBajYxQVkxTjVoakFTckU0eU5LN1E0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1ODEwNjI3CWZpbGU6VmVzcGVyRFNQXzAuMC4yMV94NjQtc2V0dXAuZXhlCmJGaEE2bE9VZ0ZwWG5CR3UrUkdBcnUrVG9UYm45NXhld2krL3pJckNleklpNG9qUHpiRk5RdTZvbnpqS1VmWXVKM0VqdEFlc0NvUnBvSDVLZk9ETURBPT0K"
     }
   }
 }
