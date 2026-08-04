@@ -149,8 +149,10 @@
     }
     const savedSource = localStorage.getItem('vesper_dsp_source') || '';
     const savedOutput = localStorage.getItem('vesper_dsp_output') || '';
-    source = sourceDevices.includes(savedSource) ? savedSource : (sourceDevices.find(d => d.toLowerCase().includes('cable input') || d.toLowerCase().includes('cable')) || sourceDevices[0] || '');
-    output = outputDevices.includes(savedOutput) ? savedOutput : (outputDevices.find(d => !d.toLowerCase().includes('cable')) || outputDevices[0] || '');
+    if (savedSource && !sourceDevices.includes(savedSource)) sourceDevices = [...sourceDevices, savedSource];
+    if (savedOutput && !outputDevices.includes(savedOutput)) outputDevices = [...outputDevices, savedOutput];
+    source = savedSource || (sourceDevices.find(d => d.toLowerCase().includes('cable input') || d.toLowerCase().includes('cable')) || sourceDevices[0] || '');
+    output = savedOutput || (outputDevices.find(d => !d.toLowerCase().includes('cable')) || outputDevices[0] || '');
   }
 
   async function toggleDsp() {
@@ -535,6 +537,25 @@
     const h = localStorage.getItem('vesper_dsp_headroom'); if (h) headroomDb = Number(h);
     const clipping = localStorage.getItem('vesper_dsp_show_clipping'); if (clipping !== null) showClipping = clipping === 'true';
 
+    savedSettingsSignature = JSON.stringify([
+      source,
+      output,
+      targetRate,
+      strategy,
+      filterType,
+      dsdFilter,
+      dsdGain,
+      headroomDb,
+      showClipping
+    ]);
+    engineSettingsSignature = JSON.stringify([
+      source,
+      output,
+      targetRate,
+      filterType,
+      headroomDb
+    ]);
+
     settingsRestored = true;
 
     eventUnlisteners.push(await listen('clipping-detected', () => {
@@ -626,6 +647,28 @@
           startDsp(true);
         }, 500); // 0.5초 디바운스 (슬라이더 조작 시 뚝뚝 끊김 방지)
       }
+    }
+  }
+
+  async function applySavedAutoEqForOutput(outDevice: string) {
+    const savedOpraStr = localStorage.getItem(`vesper_dsp_opra_${outDevice}`);
+    const saved = parseSavedAutoEq(savedOpraStr);
+    if (saved) {
+      autoEqEnabled = saved.enabled;
+      autoEqMode = saved.mode;
+      autoEqProduct = saved.mode === 'spinorama' ? saved.product : `${saved.vendor} · ${saved.product}`;
+      
+      if (autoEqEnabled) {
+        await invoke('apply_output_eq_profile', {
+          profile: { enabled: true, preamp_gain: saved.preamp_gain, bands: saved.bands }
+        });
+      } else {
+        await invoke('apply_output_eq_profile', { profile: { enabled: false, preamp_gain: 0, bands: [] } });
+      }
+    } else {
+      autoEqEnabled = false;
+      autoEqProduct = '';
+      await invoke('apply_output_eq_profile', { profile: { enabled: false, preamp_gain: 0, bands: [] } });
     }
   }
 
