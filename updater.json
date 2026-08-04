@@ -1,11 +1,11 @@
 {
   "version": "0.0.21",
   "notes": "Vesper DSP v0.0.21: Fixed background autostart behavior and AutoEQ settings restore.",
-  "pub_date": "2026-08-04T11:25:00Z",
+  "pub_date": "2026-08-04T11:30:00Z",
   "platforms": {
     "windows-x86_64": {
       "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.21/VesperDSP_0.0.21_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlJrOEJmcDJXbFhaaVhrT2NUeUhhQ1NDUzN0emk2bW5oSWdPckhVQ0xPWHo2VlFtRm9DWkEycFpkbHVRUTEzdVVPYlZIV0VqV2U3T2dmdFVzT2tyOXdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1ODEwMzA0CWZpbGU6VmVzcGVyRFNQXzAuMC4yMV94NjQtc2V0dXAuZXhlCnRrQW9HUmU4N0QvTmlZVGtMdU9zYjBZcnJTOWpadDMxNCsyL0pYaUtJR1loNjRraG9iSFJOVXFGdEFzbjEyblFKZDgrTEVkTFg4eWlxWE5mNVlUMURBPT0K"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlduQWNlYy95b2dTcGZkM2JTL1RSeTFROEx3anUvNGJ4RSt5WnFEcS9MNlcwMGpHWElvK3Bpb0Y0S3U2N05ya1hBajYxQVkxTjVoakFTckU0eU5LN1E0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1ODEwNjI3CWZpbGU6VmVzcGVyRFNQXzAuMC4yMV94NjQtc2V0dXAuZXhlCmJGaEE2bE9VZ0ZwWG5CR3UrUkdBcnUrVG9UYm45NXhld2krL3pJckNleklpNG9qUHpiRk5RdTZvbnpqS1VmWXVKM0VqdEFlc0NvUnBvSDVLZk9ETURBPT0K"
     }
   }
 }
