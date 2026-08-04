@@ -91,6 +91,30 @@ fn get_engine_status() -> audio_engine::EngineStatus {
     audio_engine::get_engine_status()
 }
 
+#[tauri::command]
+fn blink_tray_icon(app: tauri::AppHandle) -> Result<(), String> {
+    tauri::async_runtime::spawn(async move {
+        if let Some(tray) = app.tray_by_id("main_tray") {
+            let transparent = tauri::image::Image::new_owned(vec![0u8; 32 * 32 * 4], 32, 32);
+            let _ = tray.set_icon(Some(transparent));
+            
+            std::thread::sleep(std::time::Duration::from_millis(300));
+            
+            let tray_icon_bytes = include_bytes!("../icons/tray_icon.png");
+            if let Ok(image) = image::load_from_memory(tray_icon_bytes) {
+                let rgba = image.into_rgba8();
+                let tray_image = tauri::image::Image::new_owned(
+                    rgba.clone().into_raw(),
+                    rgba.width(),
+                    rgba.height(),
+                );
+                let _ = tray.set_icon(Some(tray_image));
+            }
+        }
+    });
+    Ok(())
+}
+
 // Rust-side window spawn removed in favor of JS frontend spawn to prevent thread deadlocks.
 
 fn main() {
@@ -135,7 +159,7 @@ fn main() {
                 eprintln!("Failed to register global shortcut: {error}");
             }
 
-            let open = MenuItem::with_id(app, "open", "열기", true, None::<&str>)?;
+            let open = MenuItem::with_id(app, "open", "대시보드 열기", true, None::<&str>)?;
             let signal = MenuItem::with_id(app, "signal", "시그널 경로 보기", true, None::<&str>)?;
             let preset_movie =
                 MenuItem::with_id(app, "preset_movie", "Movie 프리셋", true, None::<&str>)?;
@@ -145,16 +169,17 @@ fn main() {
                 MenuItem::with_id(app, "preset_gaming", "Gaming 프리셋", true, None::<&str>)?;
             let presets = Submenu::with_items(
                 app,
-                "프리셋",
+                "프리셋 로드",
                 true,
                 &[&preset_movie, &preset_music, &preset_gaming],
             )?;
+            let mute = MenuItem::with_id(app, "mute", "음소거 켜기/끄기", true, None::<&str>)?;
             let settings = MenuItem::with_id(app, "settings", "환경설정", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "완전 종료", true, None::<&str>)?;
             let separator = PredefinedMenuItem::separator(app)?;
             let menu = Menu::with_items(
                 app,
-                &[&open, &presets, &signal, &settings, &separator, &quit],
+                &[&open, &signal, &separator, &mute, &presets, &separator, &settings, &separator, &quit],
             )?;
 
             let tray_icon_bytes = include_bytes!("../icons/tray_icon.png");
@@ -167,7 +192,7 @@ fn main() {
                 image.height(),
             );
 
-            tauri::tray::TrayIconBuilder::new()
+            tauri::tray::TrayIconBuilder::with_id("main_tray")
                 .icon(tray_image)
                 .tooltip("Vesper DSP")
                 .menu(&menu)
@@ -177,6 +202,7 @@ fn main() {
                         show_main_window(app);
                         let _ = app.emit("open-signal", ());
                     }
+                    "mute" => emit_main(app, "toggle-mute", ()),
                     "preset_movie" => emit_main(app, "load-preset", "Movie"),
                     "preset_music" => emit_main(app, "load-preset", "Music"),
                     "preset_gaming" => emit_main(app, "load-preset", "Gaming"),
@@ -220,7 +246,8 @@ fn main() {
             set_mute,
             apply_output_eq_profile,
             get_stream_info,
-            get_engine_status
+            get_engine_status,
+            blink_tray_icon
         ])
         .run(tauri::generate_context!())
         .expect("error while running Vesper DSP");

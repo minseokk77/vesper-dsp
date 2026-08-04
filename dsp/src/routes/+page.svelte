@@ -562,7 +562,13 @@
       if (!showClipping) return;
       isClipping = true;
       clearTimeout(clipTimer);
+      invoke('blink_tray_icon').catch(console.error);
       clipTimer = setTimeout(() => { isClipping = false; }, 500);
+    }));
+
+    eventUnlisteners.push(await listen('toggle-mute', () => {
+      isMuted = !isMuted;
+      toggleMute();
     }));
 
     eventUnlisteners.push(await listen('open-settings', async () => {
