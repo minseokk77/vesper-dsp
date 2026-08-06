@@ -1,11 +1,11 @@
 {
-  "version": "0.0.22",
-  "notes": "Vesper DSP v0.0.22: Added visual clipping detection (tray blink) and new tray menu with quick mute.",
-  "pub_date": "2026-08-04T15:10:00Z",
+  "version": "0.0.23",
+  "notes": "Vesper DSP v0.0.23: 트레이 아이콘 버그 및 시그널 패스 팝업 연동 수정",
+  "pub_date": "2026-08-06T10:14:47Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.22/VesperDSP_0.0.22_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dllvZ2t2djBSeXFCQ09ySVJPVmFGU1E1TStiaUFDaUxwTUN6bU1UN0RLKzMvdGZZRjltbXVNSENSQ1ovdFh5RzByck5kZ29nM0t1RlhRYjI1Y0RPTFFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1ODIzNzk3CWZpbGU6VmVzcGVyRFNQXzAuMC4yMl94NjQtc2V0dXAuZXhlCnhTZUJyZVVtQ2dTclRNZndjOGdPK3dlRzFyU2Nkcitvbzl6Nk1wMlUyTWQ5djNrNmdvRW1ZMkZBak5kVTdyd1lGYTIyQ21vQVIzOHgxMmw3elFreUNnPT0K"
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.23/VesperDSP_0.0.23_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmV5eXB1enNtTmxLSzBXeW9ZTWdLbUNoZHVhd1JWWVNDTEtPVWZWeW5EVHlBem9vSkV3bzdkUWdiZmtjQW5DeW1rZDd5QVJLMmZaSytFdFpJM1g0WEFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2MDExODAzCWZpbGU6VmVzcGVyRFNQXzAuMC4yM194NjQtc2V0dXAuZXhlCkZNejFpaUwxZXpxQUtIdS9WbUZrZ1k5bDFnRXpDM2FJVHMwaTBHZGw5ZVE4RmVranozVjBoSUZOd1AvKy9pZmFyYVhZMVIyOTNVZUhTaWw5eG9CNUNnPT0K"
     }
   }
 }
