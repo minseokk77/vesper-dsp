@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "VesperDSP",
-  "version": "0.0.22",
+  "version": "0.0.23",
   "identifier": "com.vesper.dsp",
   "build": {
     "beforeDevCommand": "pnpm dev",
