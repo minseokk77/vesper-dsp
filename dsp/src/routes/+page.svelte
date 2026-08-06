@@ -567,8 +567,17 @@
     }));
 
     eventUnlisteners.push(await listen('toggle-mute', () => {
-      isMuted = !isMuted;
       toggleMute();
+    }));
+
+    eventUnlisteners.push(await listen('open-signal', () => {
+      isSignalModalOpen = true;
+    }));
+
+    eventUnlisteners.push(await listen('load-preset', (event) => {
+      const presetName = event.payload;
+      console.log(`Loaded preset: ${presetName}`);
+      // 프리셋 기능은 추후 확장 가능하도록 일단 로그만 남김
     }));
 
     eventUnlisteners.push(await listen('open-settings', async () => {

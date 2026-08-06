@@ -161,25 +161,13 @@ fn main() {
 
             let open = MenuItem::with_id(app, "open", "대시보드 열기", true, None::<&str>)?;
             let signal = MenuItem::with_id(app, "signal", "시그널 경로 보기", true, None::<&str>)?;
-            let preset_movie =
-                MenuItem::with_id(app, "preset_movie", "Movie 프리셋", true, None::<&str>)?;
-            let preset_music =
-                MenuItem::with_id(app, "preset_music", "Music 프리셋", true, None::<&str>)?;
-            let preset_gaming =
-                MenuItem::with_id(app, "preset_gaming", "Gaming 프리셋", true, None::<&str>)?;
-            let presets = Submenu::with_items(
-                app,
-                "프리셋 로드",
-                true,
-                &[&preset_movie, &preset_music, &preset_gaming],
-            )?;
             let mute = MenuItem::with_id(app, "mute", "음소거 켜기/끄기", true, None::<&str>)?;
             let settings = MenuItem::with_id(app, "settings", "환경설정", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "완전 종료", true, None::<&str>)?;
             let separator = PredefinedMenuItem::separator(app)?;
             let menu = Menu::with_items(
                 app,
-                &[&open, &signal, &separator, &mute, &presets, &separator, &settings, &separator, &quit],
+                &[&open, &signal, &separator, &mute, &separator, &settings, &separator, &quit],
             )?;
 
             let tray_icon_bytes = include_bytes!("../icons/tray_icon.png");
@@ -203,9 +191,6 @@ fn main() {
                         let _ = app.emit("open-signal", ());
                     }
                     "mute" => emit_main(app, "toggle-mute", ()),
-                    "preset_movie" => emit_main(app, "load-preset", "Movie"),
-                    "preset_music" => emit_main(app, "load-preset", "Music"),
-                    "preset_gaming" => emit_main(app, "load-preset", "Gaming"),
                     "settings" => {
                         show_main_window(app);
                         let _ = app.emit("open-settings", ());
