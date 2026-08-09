@@ -13,6 +13,8 @@
   let isWindowLocked = typeof window !== 'undefined' ? localStorage.getItem('vesper_dsp_window_locked') === 'true' : false;
   let isRunning = false;
   let isStarting = false;
+  let isWaitingForDevice = false;
+  let waitTimer: ReturnType<typeof setTimeout>;
   let isMuted = false;
   let sourceDevices: string[] = [];
   let outputDevices: string[] = [];
@@ -156,6 +158,11 @@
   }
 
   async function toggleDsp() {
+    if (isWaitingForDevice) {
+      isWaitingForDevice = false;
+      clearTimeout(waitTimer);
+      return;
+    }
     if (isStarting) return;
     if (isRunning) {
       await invoke('stop_dsp');
@@ -183,18 +190,31 @@
           });
           break;
         } catch (error) {
-          const isBusy = String(error).includes('-2147024726') || String(error).includes('리소스가 사용 중');
+          const errStr = String(error);
+          const isBusy = errStr.includes('-2147024726') || errStr.includes('리소스가 사용 중');
+          if (errStr.toLowerCase().includes('not found') || errStr.includes('장치를 찾을 수 없습니다')) {
+            throw new Error('DEVICE_NOT_FOUND');
+          }
           if (!isBusy || attempt === 2) throw error;
           await new Promise((resolve) => setTimeout(resolve, 150));
         }
       }
       isRunning = true;
+      isWaitingForDevice = false;
       localStorage.setItem('vesper_dsp_is_running', 'true');
       // 실제 스트림 파라미터를 localStorage에 저장 (시그널 패스 iframe에서 접근용)
       invoke<StreamInfo | null>('get_stream_info').then((info) => {
         if (info) localStorage.setItem('vesper_dsp_stream_info', JSON.stringify(info));
       }).catch(() => {});
     } catch (e) {
+      if (String(e).includes('DEVICE_NOT_FOUND')) {
+        isWaitingForDevice = true;
+        clearTimeout(waitTimer);
+        waitTimer = setTimeout(() => {
+          startDsp(restart);
+        }, 2000);
+        return;
+      }
       alert("백엔드 오류: " + e);
       isRunning = false;
     } finally {
@@ -852,11 +872,13 @@
           class="w-full py-2.5 rounded-2xl font-bold text-sm tracking-wide uppercase transition-all duration-300 active:scale-[0.97] shadow-lg
                  {isRunning 
                    ? 'bg-apple-blue/20 text-apple-blue border border-apple-blue/30 hover:bg-apple-blue/30 shadow-[0_0_20px_rgba(10,132,255,0.15)]' 
+                   : isWaitingForDevice
+                   ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30 hover:bg-yellow-500/30 shadow-[0_0_20px_rgba(234,179,8,0.15)]'
                    : 'bg-white text-black hover:bg-gray-200'}"
           on:click={toggleDsp}
           disabled={isStarting}
         >
-          {isRunning ? 'Stop Engine' : 'Engage DSP'}
+          {isRunning ? 'Stop Engine' : isWaitingForDevice ? 'Waiting for Device...' : 'Engage DSP'}
         </button>
         <button 
           class="flex items-center justify-center px-4 rounded-2xl border transition-all duration-300 active:scale-[0.97]
