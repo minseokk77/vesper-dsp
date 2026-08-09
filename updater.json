@@ -1,11 +1,11 @@
 {
-  "version": "0.0.23",
-  "notes": "Vesper DSP v0.0.23: 트레이 아이콘 버그 및 시그널 패스 팝업 연동 수정",
-  "pub_date": "2026-08-06T10:14:47Z",
+  "version": "0.0.24",
+  "notes": "Vesper DSP v0.0.24: 기기 연결 대기 상태(Waiting for Device) 지원 및 버그 수정",
+  "pub_date": "2026-08-09T23:46:00Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.23/VesperDSP_0.0.23_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmV5eXB1enNtTmxLSzBXeW9ZTWdLbUNoZHVhd1JWWVNDTEtPVWZWeW5EVHlBem9vSkV3bzdkUWdiZmtjQW5DeW1rZDd5QVJLMmZaSytFdFpJM1g0WEFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2MDExODAzCWZpbGU6VmVzcGVyRFNQXzAuMC4yM194NjQtc2V0dXAuZXhlCkZNejFpaUwxZXpxQUtIdS9WbUZrZ1k5bDFnRXpDM2FJVHMwaTBHZGw5ZVE4RmVranozVjBoSUZOd1AvKy9pZmFyYVhZMVIyOTNVZUhTaWw5eG9CNUNnPT0K"
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.24/VesperDSP_0.0.24_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dldRMkNoWThwOElPY09xK2xBUlZrRmloQVBZMXZZdHE4ejVQWWhiMVlxSjN6ckExSmllQmtDcG5wT01Yai9XQkVJaVBRMHI4clUxcWZaaElQS3FVb2dJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2MzE5MTY4CWZpbGU6VmVzcGVyRFNQXzAuMC4yNF94NjQtc2V0dXAuZXhlCnF2aS9uNitvWkVXbjNJZ3E4TEl0NUdhT0JCekZGZ1BPeVRmKzBBQUhONG00WGs0SW1YL3hJc0ZzbmtTMHBiS3BheW14MkZYaGlEYm9WTXJ6aG44TEFRPT0K"
     }
   }
 }
