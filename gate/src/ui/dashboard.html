@@ -15,6 +15,7 @@
             --primary: #818cf8;
             --primary-glow: rgba(129, 140, 248, 0.25);
             --accent: #10b981;
+            --stream: #38bdf8;
             --danger: #f43f5e;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
@@ -74,7 +75,7 @@
 
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 16px;
             margin-bottom: 24px;
         }
@@ -219,6 +220,10 @@
                 <div class="metric-value" id="metric-cache" style="color: var(--accent);">0</div>
             </div>
             <div class="metric-card">
+                <div class="metric-label">📺 치지직/HLS 완충 스트림</div>
+                <div class="metric-value" id="metric-stream" style="color: var(--stream);">0</div>
+            </div>
+            <div class="metric-card">
                 <div class="metric-label">서버 가동 시간 (Uptime)</div>
                 <div class="metric-value" id="metric-uptime">0s</div>
             </div>
@@ -229,6 +234,17 @@
                 <h2>⚡ 간편 토글 스위치 설정</h2>
             </div>
             <div class="switches-grid">
+                <div class="switch-item">
+                    <div class="switch-info">
+                        <h3>📺 치지직/스트리밍 완충 부스터</h3>
+                        <p>영상 조각 3초 치를 미리 램에 확보하여 끊김 박멸</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="stream-toggle" onchange="toggleSetting('stream')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
                 <div class="switch-item">
                     <div class="switch-info">
                         <h3>CORS 자동 해결</h3>
@@ -340,6 +356,9 @@
                 const data = await res.json();
                 document.getElementById('metric-total').innerText = data.total_requests.toLocaleString();
                 document.getElementById('metric-cache').innerText = data.cache_hits.toLocaleString();
+                if (data.stream_buffered !== undefined) {
+                    document.getElementById('metric-stream').innerText = data.stream_buffered.toLocaleString();
+                }
                 document.getElementById('metric-uptime').innerText = formatUptime(data.uptime_seconds);
             } catch (e) {}
         }
@@ -356,6 +375,9 @@
                 const config = await res.json();
                 document.getElementById('cors-toggle').checked = config.enable_cors;
                 document.getElementById('cache-toggle').checked = config.enable_cache;
+                if (config.enable_stream_booster !== undefined) {
+                    document.getElementById('stream-toggle').checked = config.enable_stream_booster;
+                }
                 if (config.autostart !== undefined) {
                     document.getElementById('autostart-toggle').checked = config.autostart;
                 }
@@ -417,6 +439,7 @@
             let body = {};
             if (type === 'cors') body.enable_cors = document.getElementById('cors-toggle').checked;
             if (type === 'cache') body.enable_cache = document.getElementById('cache-toggle').checked;
+            if (type === 'stream') body.enable_stream_booster = document.getElementById('stream-toggle').checked;
             if (type === 'autostart') body.autostart = document.getElementById('autostart-toggle').checked;
 
             await fetch('/pgate/api/settings', {

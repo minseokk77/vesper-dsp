@@ -26,6 +26,10 @@ pub struct GatewayConfig {
     #[serde(default = "default_true")]
     pub enable_cache: bool,
 
+    /// 치지직 및 HLS 실시간 스트리밍 지터 완충 / 프리페치 부스터 활성화 여부
+    #[serde(default = "default_true")]
+    pub enable_stream_booster: bool,
+
     /// 도메인(Host) 기반 라우팅 규칙 (예: "app.local" => "http://127.0.0.1:5173")
     #[serde(default)]
     pub host_routes: HashMap<String, String>,
@@ -61,7 +65,7 @@ impl Default for GatewayConfig {
         mock_endpoints.insert(
             "/api/hello".to_string(),
             serde_json::json!({
-                "message": "pgate 게이트웨이가 정상 작동 중입니다!",
+                "message": "vgate 게이트웨이가 정상 작동 중입니다!",
                 "timestamp": 2026
             }).to_string(),
         );
@@ -71,6 +75,7 @@ impl Default for GatewayConfig {
             port: default_port(),
             enable_cors: true,
             enable_cache: true,
+            enable_stream_booster: true,
             host_routes,
             path_routes: HashMap::new(),
             mock_endpoints,

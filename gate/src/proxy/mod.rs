@@ -1,5 +1,6 @@
 pub mod cors;
 pub mod mock;
+pub mod stream_booster;
 
 use std::sync::{Arc, RwLock};
 use hyper::{Method, Request, Response, StatusCode};
@@ -15,6 +16,7 @@ use crate::config::GatewayConfig;
 use crate::stats::GatewayStats;
 use crate::proxy::cors::{handle_preflight, inject_cors_headers};
 use crate::proxy::mock::handle_mock_response;
+use crate::proxy::stream_booster::StreamBufferCache;
 use crate::autostart::{enable_autostart, disable_autostart, is_autostart_enabled};
 
 const DASHBOARD_HTML: &str = include_str!("../ui/dashboard.html");
@@ -40,6 +42,7 @@ struct AddMockReq {
 struct SettingsReq {
     enable_cors: Option<bool>,
     enable_cache: Option<bool>,
+    enable_stream_booster: Option<bool>,
     autostart: Option<bool>,
 }
 
@@ -48,10 +51,12 @@ pub async fn handle_request(
     req: Request<Incoming>,
     config_lock: Arc<RwLock<GatewayConfig>>,
     stats: Arc<GatewayStats>,
+    stream_cache: Arc<StreamBufferCache>,
 ) -> std::result::Result<Response<Full<Bytes>>, hyper::Error> {
     stats.record_request();
 
     let path = req.uri().path().to_string();
+    let query = req.uri().query().unwrap_or("").to_string();
     let method = req.method().clone();
 
     // 1. CORS Preflight (OPTIONS) 요청 가로채기
@@ -155,6 +160,9 @@ pub async fn handle_request(
             if let Some(cache) = data.enable_cache {
                 cfg.enable_cache = cache;
             }
+            if let Some(booster) = data.enable_stream_booster {
+                cfg.enable_stream_booster = booster;
+            }
             if let Some(auto) = data.autostart {
                 if auto {
                     let _ = enable_autostart();
@@ -172,7 +180,7 @@ pub async fn handle_request(
     }
 
     // 5. Mock API 엔드포인트 가로채기
-    let (enable_cors, mock_hit, target_backend) = {
+    let (enable_cors, enable_stream_booster, mock_hit, target_backend) = {
         let cfg = config_lock.read().unwrap();
         let mock = cfg.mock_endpoints.get(&path).cloned();
 
@@ -190,12 +198,29 @@ pub async fn handle_request(
             None
         };
 
-        (cfg.enable_cors, mock, target)
+        (cfg.enable_cors, cfg.enable_stream_booster, mock, target)
     };
 
     if let Some(mock_json) = mock_hit {
         stats.record_cache_hit();
         return Ok(handle_mock_response(&mock_json, enable_cors));
+    }
+
+    // 6. 치지직/HLS 스트리밍 완충 캐시 확인 (.ts, .m4s)
+    let full_req_uri = if query.is_empty() { path.clone() } else { format!("{}?{}", path, query) };
+    if enable_stream_booster && (path.ends_with(".ts") || path.ends_with(".m4s") || path.ends_with(".mp4")) {
+        if let Some(cached_chunk) = stream_cache.get(&full_req_uri) {
+            stats.record_stream_buffer();
+            let mut resp = Response::builder()
+                .status(StatusCode::OK)
+                .header(CONTENT_TYPE, HeaderValue::from_static("video/mp4"))
+                .body(Full::new(cached_chunk))
+                .unwrap();
+            if enable_cors {
+                inject_cors_headers(resp.headers_mut());
+            }
+            return Ok(resp);
+        }
     }
 
     let backend_url = match target_backend {
@@ -211,7 +236,7 @@ pub async fn handle_request(
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>pgate - 라우팅 경로를 찾을 수 없음</title>
+    <title>Vesper Gate - 라우팅 경로를 찾을 수 없음</title>
     <style>
         body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #090d16; color: #f8fafc; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }}
         .card {{ background: rgba(18, 24, 38, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 32px; max-width: 500px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); text-align: center; }}
@@ -224,7 +249,7 @@ pub async fn handle_request(
     <div class="card">
         <h1>🚦 라우팅 대상을 찾을 수 없습니다</h1>
         <p>요청된 호스트(<code>{}</code>) 또는 경로(<code>{}</code>)에 연결된 백엔드가 없습니다.</p>
-        <p><a href="/pgate/ui" style="color: #38bdf8; text-decoration: none; font-weight: 600;">👉 pgate 웹 대시보드 열기</a></p>
+        <p><a href="/pgate/ui" style="color: #38bdf8; text-decoration: none; font-weight: 600;">👉 Vesper Gate 웹 대시보드 열기</a></p>
     </div>
 </body>
 </html>"#,
@@ -243,40 +268,25 @@ pub async fn handle_request(
         }
     };
 
-    // 6. 백엔드로 프록시 전달
+    // 7. 백엔드로 프록시 전달 및 m3u8 프리페치 파싱
     match forward_to_backend(req, &backend_url, enable_cors).await {
-        Ok(resp) => Ok(resp),
+        Ok(resp) => {
+            // m3u8 플레이리스트인 경우 백그라운드 프리페치 파싱
+            if enable_stream_booster && (path.ends_with(".m3u8") || path.contains(".m3u8?")) {
+                if let Some(ref bytes) = resp.body().clone().into_inner() {
+                    if let Ok(text) = std::str::from_utf8(bytes) {
+                        stream_cache.parse_and_prefetch(&full_req_uri, text);
+                    }
+                }
+            }
+            Ok(resp)
+        }
         Err(_) => {
             stats.record_502();
-            let bad_gateway_html = format!(
-                r#"<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <title>pgate - 502 Bad Gateway</title>
-    <style>
-        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #090d16; color: #f8fafc; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }}
-        .card {{ background: rgba(18, 24, 38, 0.8); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: 16px; padding: 32px; max-width: 500px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); text-align: center; }}
-        h1 {{ color: #f43f5e; font-size: 22px; margin-bottom: 12px; }}
-        p {{ color: #94a3b8; font-size: 14px; line-height: 1.6; }}
-        code {{ background: #0f172a; color: #38bdf8; padding: 4px 8px; border-radius: 6px; font-family: monospace; }}
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h1>⚠️ 백엔드 서버에 연결할 수 없습니다 (502)</h1>
-        <p>대상 서버(<code>{}</code>)가 꺼져 있거나 응답하지 않습니다.</p>
-        <p>로컬 개발 서버(Vite, FastAPI 등)가 켜져 있는지 확인해 주세요.</p>
-    </div>
-</body>
-</html>"#,
-                backend_url
-            );
-
             let mut resp = Response::builder()
                 .status(StatusCode::BAD_GATEWAY)
-                .header(CONTENT_TYPE, HeaderValue::from_static("text/html; charset=utf-8"))
-                .body(Full::new(Bytes::from(bad_gateway_html)))
+                .header(CONTENT_TYPE, HeaderValue::from_static("application/json; charset=utf-8"))
+                .body(Full::new(Bytes::from("{\"error\": \"502 Bad Gateway - 로컬 대상 서버가 꺼져 있습니다.\"}")))
                 .unwrap();
             if enable_cors {
                 inject_cors_headers(resp.headers_mut());
@@ -286,16 +296,16 @@ pub async fn handle_request(
     }
 }
 
+/// 백엔드로 요청을 포워딩하고 응답을 반환하는 핵심 프록시 함수
 async fn forward_to_backend(
-    mut req: Request<Incoming>,
-    backend_base: &str,
+    req: Request<Incoming>,
+    target_backend: &str,
     enable_cors: bool,
 ) -> Result<Response<Full<Bytes>>, Box<dyn std::error::Error + Send + Sync>> {
-    let backend_uri: hyper::Uri = backend_base.parse()?;
-    let host = backend_uri.host().unwrap_or("127.0.0.1");
-    let port = backend_uri.port_u16().unwrap_or(80);
+    let (target_host, target_port) = parse_target(target_backend)?;
+    let addr = format!("{}:{}", target_host, target_port);
 
-    let stream = TcpStream::connect((host, port)).await?;
+    let stream = TcpStream::connect(addr).await?;
     let io = TokioIo::new(stream);
 
     let (mut sender, conn) = hyper::client::conn::http1::handshake(io).await?;
@@ -303,21 +313,48 @@ async fn forward_to_backend(
         let _ = conn.await;
     });
 
-    let original_path = req.uri().path_and_query().map(|p| p.as_str()).unwrap_or("/");
-    *req.uri_mut() = original_path.parse()?;
-
     let (parts, body) = req.into_parts();
     let body_bytes = body.collect().await?.to_bytes();
-    let new_req = Request::from_parts(parts, Full::new(body_bytes));
 
-    let backend_res = sender.send_request(new_req).await?;
-    let (res_parts, res_body) = backend_res.into_parts();
-    let res_bytes = res_body.collect().await?.to_bytes();
+    let mut forward_req = hyper::Request::builder()
+        .method(parts.method)
+        .uri(parts.uri);
 
-    let mut final_response = Response::from_parts(res_parts, Full::new(res_bytes));
-    if enable_cors {
-        inject_cors_headers(final_response.headers_mut());
+    for (header_name, header_value) in parts.headers.iter() {
+        if header_name != hyper::header::HOST {
+            forward_req = forward_req.header(header_name, header_value);
+        }
+    }
+    forward_req = forward_req.header(hyper::header::HOST, format!("{}:{}", target_host, target_port));
+
+    let outgoing_req = forward_req.body(Full::new(body_bytes))?;
+    let response = sender.send_request(outgoing_req).await?;
+
+    let (resp_parts, resp_body) = response.into_parts();
+    let resp_bytes = resp_body.collect().await?.to_bytes();
+
+    let mut final_resp = Response::builder().status(resp_parts.status);
+    for (header_name, header_value) in resp_parts.headers.iter() {
+        final_resp = final_resp.header(header_name, header_value);
     }
 
-    Ok(final_response)
+    let mut built_resp = final_resp.body(Full::new(resp_bytes))?;
+    if enable_cors {
+        inject_cors_headers(built_resp.headers_mut());
+    }
+
+    Ok(built_resp)
+}
+
+fn parse_target(target: &str) -> Result<(String, u16), Box<dyn std::error::Error + Send + Sync>> {
+    if let Ok(port) = target.parse::<u16>() {
+        return Ok(("127.0.0.1".to_string(), port));
+    }
+
+    let target_clean = target.trim_start_matches("http://").trim_start_matches("https://");
+    let mut parts = target_clean.split(':');
+    let host = parts.next().unwrap_or("127.0.0.1").to_string();
+    let port = parts.next().and_then(|p| p.parse::<u16>().ok()).unwrap_or(80);
+
+    Ok((host, port))
 }

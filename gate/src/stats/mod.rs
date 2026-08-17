@@ -8,6 +8,7 @@ pub struct GatewayStats {
     total_requests: AtomicU64,
     cache_hits: AtomicU64,
     errors_502: AtomicU64,
+    stream_buffered: AtomicU64,
 }
 
 #[derive(Serialize)]
@@ -16,6 +17,7 @@ pub struct StatsSnapshot {
     pub total_requests: u64,
     pub cache_hits: u64,
     pub errors_502: u64,
+    pub stream_buffered: u64,
 }
 
 impl Default for GatewayStats {
@@ -31,6 +33,7 @@ impl GatewayStats {
             total_requests: AtomicU64::new(0),
             cache_hits: AtomicU64::new(0),
             errors_502: AtomicU64::new(0),
+            stream_buffered: AtomicU64::new(0),
         }
     }
 
@@ -40,6 +43,10 @@ impl GatewayStats {
 
     pub fn record_cache_hit(&self) {
         self.cache_hits.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub fn record_stream_buffer(&self) {
+        self.stream_buffered.fetch_add(1, Ordering::Relaxed);
     }
 
     pub fn record_502(&self) {
@@ -52,6 +59,7 @@ impl GatewayStats {
             total_requests: self.total_requests.load(Ordering::Relaxed),
             cache_hits: self.cache_hits.load(Ordering::Relaxed),
             errors_502: self.errors_502.load(Ordering::Relaxed),
+            stream_buffered: self.stream_buffered.load(Ordering::Relaxed),
         }
     }
 }

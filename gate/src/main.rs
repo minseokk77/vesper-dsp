@@ -244,18 +244,21 @@ async fn start_server(config: GatewayConfig) -> Result<(), Box<dyn std::error::E
 
     let config_lock = Arc::new(RwLock::new(config));
     let stats_arc = Arc::new(GatewayStats::new());
+    let stream_cache = Arc::new(crate::proxy::stream_booster::StreamBufferCache::new());
 
     loop {
         let (stream, _) = listener.accept().await?;
         let io = TokioIo::new(stream);
         let cfg_clone = Arc::clone(&config_lock);
         let stats_clone = Arc::clone(&stats_arc);
+        let stream_cache_clone = Arc::clone(&stream_cache);
 
         tokio::spawn(async move {
             let service = hyper::service::service_fn(move |req| {
                 let cfg = Arc::clone(&cfg_clone);
                 let st = Arc::clone(&stats_clone);
-                async move { handle_request(req, cfg, st).await }
+                let sc = Arc::clone(&stream_cache_clone);
+                async move { handle_request(req, cfg, st, sc).await }
             });
 
             if let Err(_err) = auto::Builder::new(hyper_util::rt::TokioExecutor::new())
