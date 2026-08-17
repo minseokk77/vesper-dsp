@@ -46,6 +46,10 @@ pub struct GatewayConfig {
     #[serde(default = "default_false")]
     pub enable_tcp_no_lag: bool,
 
+    /// 스마트 분기 DNS (1.1.1.1 + 한국 공공/금융 자동 분기) 활성화 여부
+    #[serde(default = "default_false")]
+    pub enable_smart_dns: bool,
+
     /// 도메인(Host) 기반 라우팅 규칙 (예: "app.local" => "http://127.0.0.1:5173")
     #[serde(default)]
     pub host_routes: HashMap<String, String>,
@@ -107,6 +111,7 @@ impl Default for GatewayConfig {
             enable_security_shield: true,
             enable_https: false,
             enable_tcp_no_lag: false,
+            enable_smart_dns: false,
             https_port: default_https_port(),
             host_routes,
             path_routes: HashMap::new(),

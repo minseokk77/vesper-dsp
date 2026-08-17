@@ -259,7 +259,11 @@ async fn start_server(config: GatewayConfig) -> Result<(), Box<dyn std::error::E
     let mut tcp_mgr = crate::tcp_proxy::TcpProxyManager::new();
     tcp_mgr.start_listeners(tcp_routes_lock);
 
-    // 2. 로컬 HTTPS (포트 8443) 백그라운드 서버 가동
+    // 2. 스마트 분기 DNS (127.0.0.1:53) 서버 구동
+    let smart_dns = crate::optimizer::smart_dns::SmartDnsServer::new();
+    let _ = smart_dns.start().await;
+
+    // 3. 로컬 HTTPS (포트 8443) 백그라운드 서버 가동
     if let Ok(tls_acceptor) = crate::tls::load_or_generate_tls_config() {
         let https_addr = format!("{}:{}", config.host, config.https_port);
         if let Ok(https_listener) = TcpListener::bind(&https_addr).await {

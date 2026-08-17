@@ -312,6 +312,17 @@
 
                 <div class="switch-item">
                     <div class="switch-info">
+                        <h3>🧠 스마트 분기 DNS</h3>
+                        <p>1.1.1.1 기본 + 장학재단/정부/은행 자동 국내 우회</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="smart-dns-toggle" onchange="toggleSetting('smartdns')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="switch-item">
+                    <div class="switch-info">
                         <h3>🔒 로컬 HTTPS 지원 (포트 8443)</h3>
                         <p>자체 SSL 인증서로 https:// 브라우저 지원</p>
                     </div>
@@ -566,6 +577,9 @@
                 if (config.enable_tcp_no_lag !== undefined) {
                     document.getElementById('no-lag-toggle').checked = config.enable_tcp_no_lag;
                 }
+                if (config.enable_smart_dns !== undefined) {
+                    document.getElementById('smart-dns-toggle').checked = config.enable_smart_dns;
+                }
                 if (config.autostart !== undefined) {
                     document.getElementById('autostart-toggle').checked = config.autostart;
                 }
@@ -730,6 +744,7 @@
             if (type === 'stream') body.enable_stream_booster = document.getElementById('stream-toggle').checked;
             if (type === 'https') body.enable_https = document.getElementById('https-toggle').checked;
             if (type === 'nolag') body.enable_tcp_no_lag = document.getElementById('no-lag-toggle').checked;
+            if (type === 'smartdns') body.enable_smart_dns = document.getElementById('smart-dns-toggle').checked;
             if (type === 'autostart') body.autostart = document.getElementById('autostart-toggle').checked;
 
             await fetch('/pgate/api/settings', {

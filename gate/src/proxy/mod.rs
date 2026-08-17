@@ -59,6 +59,7 @@ struct SettingsReq {
     enable_security_shield: Option<bool>,
     enable_https: Option<bool>,
     enable_tcp_no_lag: Option<bool>,
+    enable_smart_dns: Option<bool>,
     https_port: Option<u16>,
     autostart: Option<bool>,
 }
@@ -335,6 +336,14 @@ pub async fn handle_request(
                     let _ = crate::optimizer::network::apply_tcp_no_lag();
                 } else {
                     let _ = crate::optimizer::network::revert_tcp_no_lag();
+                }
+            }
+            if let Some(smart_dns) = data.enable_smart_dns {
+                cfg.enable_smart_dns = smart_dns;
+                if smart_dns {
+                    let _ = crate::optimizer::smart_dns::set_system_dns_smart();
+                } else {
+                    let _ = crate::optimizer::smart_dns::reset_system_dns();
                 }
             }
             if let Some(hport) = data.https_port {
