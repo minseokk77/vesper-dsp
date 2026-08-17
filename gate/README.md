@@ -1,6 +1,6 @@
 # ⚡ Vesper Gate (`vgate`)
 
-> **Vesper 생태계의 초고속 로컬 리버스 프록시, API 게이트웨이 & 안티 디도스 방패**
+> **Vesper 생태계의 초고속 로컬 리버스 프록시, API 게이트웨이 & 보안 쉴드(WAF)**
 > 
 > Cloudflare Pingora 및 Tokio 기반의 압도적인 초경량·고성능 Rust 엔진 탑재
 
@@ -9,6 +9,8 @@
 ## 🌟 주요 기능
 
 1. **마우스 클릭 & 토글 스위치 중심의 풀 UI**:
+   * **🛡️ 침입 탐지 & 보안 쉴드(WAF) 토글**: 해킹 봇, `.env` 탈취, SQLi 시도 실시간 감지 & 차단
+   * **📺 치지직/스트리밍 완충 부스터 토글**: 다음 영상 조각 3초 치를 미리 램에 확보하여 끊김 박멸
    * **CORS 자동 해결 토글**: 스위치 하나로 프론트/백엔드 통신 에러 1초 해결
    * **초고속 RAM 캐싱 토글**: 동일 요청 메모리 0.1ms 응답 모드
    * **부팅 시 자동 시작 토글**: 컴퓨터를 켤 때 백그라운드 자동 가동
@@ -30,6 +32,11 @@
 
 ---
 
-## 📁 파일 정보
-* **단일 포터블 실행 파일**: [`vgate.exe`](file:///C:/Users/minse/Documents/antigravity/noble-babbage/vesper-gate/vgate.exe)
-* **영구 설정 파일**: `~/.pgate/config.toml` (UI에서 자동으로 저장/관리)
+## 📜 라이선스 및 오픈소스 고지 (License & Credits)
+
+* **Vesper Proprietary License (EULA)**: Copyright (c) 2026 minseokk77. All Rights Reserved.
+  * 개인적/비상업적 용도로 완전 무료로 사용 가능합니다.
+  * 무단 상업적 재판매, 역공학 및 바이너리 수정은 금지됩니다.
+* **Third-Party Open Source Credits**:
+  * [Cloudflare Pingora](https://github.com/cloudflare/pingora) (Apache-2.0 License)
+  * [Tokio](https://tokio.rs) & [Hyper](https://hyper.rs) (MIT License)
