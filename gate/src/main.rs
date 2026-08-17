@@ -6,6 +6,7 @@ mod config;
 mod daemon;
 mod error;
 mod hosts;
+mod optimizer;
 mod proxy;
 mod stats;
 mod tcp_proxy;
@@ -26,9 +27,12 @@ use stats::GatewayStats;
 use proxy::handle_request;
 use daemon::{spawn_daemon, stop_daemon, get_saved_pid, save_pid, remove_pid_file};
 use tray::run_tray_thread;
+use optimizer::process::boost_process_priority;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 윈도우 환경: CPU 및 I/O 우선순위 자동 부스트
+    boost_process_priority();
     // 윈도우 환경: 터미널에서 실행된 경우 부모 콘솔에 연결하여 CLI 출력 지원
     #[cfg(target_os = "windows")]
     unsafe {

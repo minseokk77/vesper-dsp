@@ -42,6 +42,10 @@ pub struct GatewayConfig {
     #[serde(default = "default_https_port")]
     pub https_port: u16,
 
+    /// 윈도우 TCP/IP 네트워크 스택 No-Lag 최적화 활성화 여부
+    #[serde(default = "default_false")]
+    pub enable_tcp_no_lag: bool,
+
     /// 도메인(Host) 기반 라우팅 규칙 (예: "app.local" => "http://127.0.0.1:5173")
     #[serde(default)]
     pub host_routes: HashMap<String, String>,
@@ -102,6 +106,7 @@ impl Default for GatewayConfig {
             enable_stream_booster: true,
             enable_security_shield: true,
             enable_https: false,
+            enable_tcp_no_lag: false,
             https_port: default_https_port(),
             host_routes,
             path_routes: HashMap::new(),

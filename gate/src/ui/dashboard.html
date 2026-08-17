@@ -301,6 +301,17 @@
 
                 <div class="switch-item">
                     <div class="switch-info">
+                        <h3>⚡ 윈도우 TCP No-Lag 최적화</h3>
+                        <p>Nagle 해제 및 즉답 튜닝 (공공기관/DNS 안전)</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="no-lag-toggle" onchange="toggleSetting('nolag')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="switch-item">
+                    <div class="switch-info">
                         <h3>🔒 로컬 HTTPS 지원 (포트 8443)</h3>
                         <p>자체 SSL 인증서로 https:// 브라우저 지원</p>
                     </div>
@@ -552,6 +563,9 @@
                 if (config.enable_https !== undefined) {
                     document.getElementById('https-toggle').checked = config.enable_https;
                 }
+                if (config.enable_tcp_no_lag !== undefined) {
+                    document.getElementById('no-lag-toggle').checked = config.enable_tcp_no_lag;
+                }
                 if (config.autostart !== undefined) {
                     document.getElementById('autostart-toggle').checked = config.autostart;
                 }
@@ -715,6 +729,7 @@
             if (type === 'security') body.enable_security_shield = document.getElementById('security-toggle').checked;
             if (type === 'stream') body.enable_stream_booster = document.getElementById('stream-toggle').checked;
             if (type === 'https') body.enable_https = document.getElementById('https-toggle').checked;
+            if (type === 'nolag') body.enable_tcp_no_lag = document.getElementById('no-lag-toggle').checked;
             if (type === 'autostart') body.autostart = document.getElementById('autostart-toggle').checked;
 
             await fetch('/pgate/api/settings', {

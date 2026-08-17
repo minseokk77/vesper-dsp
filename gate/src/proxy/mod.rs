@@ -58,6 +58,7 @@ struct SettingsReq {
     enable_stream_booster: Option<bool>,
     enable_security_shield: Option<bool>,
     enable_https: Option<bool>,
+    enable_tcp_no_lag: Option<bool>,
     https_port: Option<u16>,
     autostart: Option<bool>,
 }
@@ -327,6 +328,14 @@ pub async fn handle_request(
             }
             if let Some(https) = data.enable_https {
                 cfg.enable_https = https;
+            }
+            if let Some(no_lag) = data.enable_tcp_no_lag {
+                cfg.enable_tcp_no_lag = no_lag;
+                if no_lag {
+                    let _ = crate::optimizer::network::apply_tcp_no_lag();
+                } else {
+                    let _ = crate::optimizer::network::revert_tcp_no_lag();
+                }
             }
             if let Some(hport) = data.https_port {
                 cfg.https_port = hport;
