@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vesper Gate - 로컬 만능 게이트웨이 & 보안 쉴드 대시보드</title>
+    <title>Vesper Gate - 로컬 만능 게이트웨이 & L4/L7 보안 쉴드</title>
     <style>
         :root {
             --bg: #090d16;
@@ -18,6 +18,7 @@
             --stream: #38bdf8;
             --danger: #f43f5e;
             --warning: #f59e0b;
+            --purple: #c084fc;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
             --radius: 16px;
@@ -35,7 +36,7 @@
             justify-content: center;
         }
 
-        .container { width: 100%; max-width: 1020px; }
+        .container { width: 100%; max-width: 1040px; }
 
         header {
             display: flex;
@@ -78,7 +79,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 16px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
         .metric-card {
             background: var(--surface);
@@ -89,6 +90,27 @@
         }
         .metric-label { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
         .metric-value { font-size: 22px; font-weight: 700; color: var(--primary); }
+
+        /* 실시간 차트 카드 */
+        .chart-card {
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .chart-header h2 { font-size: 15px; font-weight: 600; color: var(--text-main); }
+        .chart-badge { background: rgba(56, 189, 248, 0.15); color: var(--stream); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+        canvas { width: 100%; height: 90px; display: block; }
 
         .card {
             background: var(--surface);
@@ -109,7 +131,7 @@
 
         .switches-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 16px;
         }
         .switch-item {
@@ -163,6 +185,7 @@
         }
         button:hover { transform: translateY(-1px); box-shadow: 0 4px 16px var(--primary-glow); }
         button.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+        button.btn-success { background: linear-gradient(135deg, #059669, #10b981); }
         button.btn-danger { background: rgba(244, 63, 94, 0.15); color: var(--danger); border: 1px solid rgba(244, 63, 94, 0.3); }
         button.btn-danger:hover { background: var(--danger); color: white; }
         button.btn-secondary { background: rgba(255,255,255,0.08); color: var(--text-main); }
@@ -175,7 +198,7 @@
         .badge-target { color: #f59e0b; font-family: monospace; font-size: 13px; }
 
         .tab-menu { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-        .tab-btn { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 8px 16px; border-radius: 10px; font-size: 13px; }
+        .tab-btn { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 8px 16px; border-radius: 10px; font-size: 13px; cursor: pointer; }
         .tab-btn.active { background: var(--primary); color: #090d16; font-weight: 700; border-color: var(--primary); }
 
         .badge-threat-critical { background: rgba(244, 63, 94, 0.2); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
@@ -194,6 +217,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .helper-box code { color: var(--primary); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; }
         .footer-note { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 32px; }
@@ -206,14 +231,23 @@
                 <div class="logo-badge">V</div>
                 <div class="logo-title">
                     <h1>Vesper Gate</h1>
-                    <p>로컬 만능 리버스 프록시 & 보안 쉴드(WAF)</p>
+                    <p>로컬 만능 리버스 프록시 & L4/L7 보안 쉴드(WAF)</p>
                 </div>
             </div>
             <div class="status-badge">
                 <div class="status-dot"></div>
-                <span id="status-text">가동 중 (포트: 8080)</span>
+                <span id="status-text">가동 중 (HTTP: 8080 / HTTPS: 8443)</span>
             </div>
         </header>
+
+        <!-- 5번 기능: 실시간 RPS & 트래픽 라이브 파형 캔버스 -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h2>📈 실시간 트래픽 & 처리 속도 (Live RPS)</h2>
+                <div class="chart-badge" id="chart-rps-badge">0.0 req/s</div>
+            </div>
+            <canvas id="liveChart" height="90"></canvas>
+        </div>
 
         <div class="metrics-grid">
             <div class="metric-card">
@@ -246,7 +280,7 @@
                 <div class="switch-item">
                     <div class="switch-info">
                         <h3>🛡️ 악성 봇 / 침입 탐지 쉴드</h3>
-                        <p>해킹 스캐너, .env 탈취, SQLi 즉시 탐지 및 차단</p>
+                        <p>해킹 스캐너, .env 탈취, SQLi 즉시 차단</p>
                     </div>
                     <label class="switch">
                         <input type="checkbox" id="security-toggle" onchange="toggleSetting('security')">
@@ -256,8 +290,8 @@
 
                 <div class="switch-item">
                     <div class="switch-info">
-                        <h3>📺 치지직/스트리밍 완충 부스터</h3>
-                        <p>영상 조각 3초 치를 미리 램에 확보하여 끊김 박멸</p>
+                        <h3>📺 치지직 완충 부스터</h3>
+                        <p>영상 3초 치를 램에 선행 확보해 끊김 방어</p>
                     </div>
                     <label class="switch">
                         <input type="checkbox" id="stream-toggle" onchange="toggleSetting('stream')">
@@ -267,8 +301,19 @@
 
                 <div class="switch-item">
                     <div class="switch-info">
+                        <h3>🔒 로컬 HTTPS 지원 (포트 8443)</h3>
+                        <p>자체 SSL 인증서로 https:// 브라우저 지원</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="https-toggle" onchange="toggleSetting('https')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="switch-item">
+                    <div class="switch-info">
                         <h3>CORS 자동 해결</h3>
-                        <p>프론트/백엔드 통신 에러 1초 박멸</p>
+                        <p>프론트/백엔드 통신 에러 1초 해결</p>
                     </div>
                     <label class="switch">
                         <input type="checkbox" id="cors-toggle" onchange="toggleSetting('cors')">
@@ -279,7 +324,7 @@
                 <div class="switch-item">
                     <div class="switch-info">
                         <h3>부팅 시 자동 시작</h3>
-                        <p>컴퓨터 켤 때마다 백그라운드 상시 가동</p>
+                        <p>컴퓨터 켤 때마다 백그라운드 0.001초 기동</p>
                     </div>
                     <label class="switch">
                         <input type="checkbox" id="autostart-toggle" onchange="toggleSetting('autostart')">
@@ -291,14 +336,16 @@
 
         <div class="card">
             <div class="tab-menu">
-                <button class="tab-btn active" id="tab-btn-route" onclick="switchTab('route')">🌐 도메인 / 포트 라우팅</button>
+                <button class="tab-btn active" id="tab-btn-route" onclick="switchTab('route')">🌐 도메인 / 포트 라우팅 (L7)</button>
+                <button class="tab-btn" id="tab-btn-tcp" onclick="switchTab('tcp')">🎮 마인크래프트 / TCP 중계 (L4)</button>
                 <button class="tab-btn" id="tab-btn-security" onclick="switchTab('security')">🛡️ 실시간 보안 위협 로그 (<span id="tab-threat-count">0</span>)</button>
                 <button class="tab-btn" id="tab-btn-mock" onclick="switchTab('mock')">🎭 가짜 API (Mock) 응답</button>
             </div>
 
+            <!-- L7 웹 라우팅 탭 -->
             <div id="tab-content-route">
                 <div class="input-group">
-                    <input type="text" id="route-source" placeholder="도메인 입력 (예: app.local 또는 /api)">
+                    <input type="text" id="route-source" placeholder="도메인 입력 (예: app.local 또는 app.minseok.online)">
                     <input type="text" id="route-target" placeholder="대상 포트 또는 URL (예: 5173 또는 8000)">
                     <button onclick="addRoute()">연결 추가</button>
                 </div>
@@ -316,12 +363,39 @@
                     </tbody>
                 </table>
 
+                <!-- 1번 기능: 윈도우 hosts 파일 원클릭 자동 등록 -->
                 <div class="helper-box">
-                    <span>💡 윈도우 <code>hosts</code> 파일 등록용 텍스트: <code id="hosts-copy-text">127.0.0.1 app.local api.local</code></span>
-                    <button class="btn-sm btn-secondary" onclick="copyHosts()">복사</button>
+                    <span>💡 등록된 로컬 도메인을 윈도우 시스템에 즉시 등록합니다.</span>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-sm btn-success" onclick="syncHostsAuto()">⚡ 윈도우 hosts 파일에 자동 등록</button>
+                        <button class="btn-sm btn-secondary" onclick="copyHosts()">텍스트 복사</button>
+                    </div>
                 </div>
             </div>
 
+            <!-- 4번 기능: L4 마인크래프트 & 일반 TCP 포트 중계 탭 -->
+            <div id="tab-content-tcp" style="display: none;">
+                <div class="input-group">
+                    <input type="number" id="tcp-listen" placeholder="수신 포트 (예: 25565, 3306)">
+                    <input type="text" id="tcp-target" placeholder="대상 서버 (예: 127.0.0.1:25566 또는 3307)">
+                    <button onclick="addTcpRoute()">TCP 중계 등록</button>
+                </div>
+
+                <table class="route-table">
+                    <thead>
+                        <tr>
+                            <th>외부 수신 포트</th>
+                            <th>대상 서버 / 포트</th>
+                            <th style="text-align: right;">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tcp-list">
+                        <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">등록된 TCP 중계가 없습니다.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 보안 위협 로그 탭 -->
             <div id="tab-content-security" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <span style="font-size: 13px; color: var(--text-muted);">실시간으로 감지되어 안전하게 차단된 침입/스캔 로그입니다.</span>
@@ -343,6 +417,7 @@
                 </table>
             </div>
 
+            <!-- Mock API 탭 -->
             <div id="tab-content-mock" style="display: none;">
                 <div class="input-group">
                     <input type="text" id="mock-path" placeholder="API 경로 (예: /api/user)">
@@ -372,24 +447,33 @@
 
     <script>
         let currentTab = 'route';
+        let prevTotalRequests = 0;
+        let rpsHistory = new Array(30).fill(0);
 
         function switchTab(tab) {
             currentTab = tab;
-            document.getElementById('tab-btn-route').className = tab === 'route' ? 'tab-btn active' : 'tab-btn';
-            document.getElementById('tab-btn-security').className = tab === 'security' ? 'tab-btn active' : 'tab-btn';
-            document.getElementById('tab-btn-mock').className = tab === 'mock' ? 'tab-btn active' : 'tab-btn';
-            
-            document.getElementById('tab-content-route').style.display = tab === 'route' ? 'block' : 'none';
-            document.getElementById('tab-content-security').style.display = tab === 'security' ? 'block' : 'none';
-            document.getElementById('tab-content-mock').style.display = tab === 'mock' ? 'block' : 'none';
-
+            ['route', 'tcp', 'security', 'mock'].forEach(t => {
+                document.getElementById('tab-btn-' + t).className = tab === t ? 'tab-btn active' : 'tab-btn';
+                document.getElementById('tab-content-' + t).style.display = tab === t ? 'block' : 'none';
+            });
             if (tab === 'security') loadSecurityLogs();
+            if (tab === 'tcp') loadTcpRoutes();
         }
 
         async function loadStatus() {
             try {
                 const res = await fetch('/pgate/status');
                 const data = await res.json();
+                
+                const currentTotal = data.total_requests;
+                const delta = prevTotalRequests > 0 ? Math.max(0, currentTotal - prevTotalRequests) : 0;
+                prevTotalRequests = currentTotal;
+
+                rpsHistory.shift();
+                rpsHistory.push(delta);
+                document.getElementById('chart-rps-badge').innerText = delta.toFixed(1) + ' req/s';
+                renderLiveChart();
+
                 document.getElementById('metric-total').innerText = data.total_requests.toLocaleString();
                 document.getElementById('metric-cache').innerText = data.cache_hits.toLocaleString();
                 if (data.stream_buffered !== undefined) {
@@ -409,6 +493,51 @@
             return Math.floor(sec / 3600) + '시간 ' + Math.floor((sec % 3600) / 60) + '분';
         }
 
+        function renderLiveChart() {
+            const canvas = document.getElementById('liveChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width = canvas.parentElement.clientWidth - 48;
+            const h = canvas.height = 90;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const maxVal = Math.max(...rpsHistory, 10);
+            const stepX = w / (rpsHistory.length - 1);
+
+            // 네온 그라데이션 라인
+            const gradient = ctx.createLinearGradient(0, 0, 0, h);
+            gradient.addColorStop(0, 'rgba(129, 140, 248, 0.4)');
+            gradient.addColorStop(1, 'rgba(129, 140, 248, 0.0)');
+
+            ctx.beginPath();
+            ctx.moveTo(0, h);
+            rpsHistory.forEach((val, idx) => {
+                const x = idx * stepX;
+                const y = h - (val / maxVal) * (h - 20) - 10;
+                if (idx === 0) ctx.lineTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.lineTo(w, h);
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            ctx.beginPath();
+            rpsHistory.forEach((val, idx) => {
+                const x = idx * stepX;
+                const y = h - (val / maxVal) * (h - 20) - 10;
+                if (idx === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.strokeStyle = '#818cf8';
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = '#818cf8';
+            ctx.shadowBlur = 8;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
         async function loadConfig() {
             try {
                 const res = await fetch('/pgate/api/routes');
@@ -420,16 +549,17 @@
                 if (config.enable_stream_booster !== undefined) {
                     document.getElementById('stream-toggle').checked = config.enable_stream_booster;
                 }
+                if (config.enable_https !== undefined) {
+                    document.getElementById('https-toggle').checked = config.enable_https;
+                }
                 if (config.autostart !== undefined) {
                     document.getElementById('autostart-toggle').checked = config.autostart;
                 }
 
                 const tbody = document.getElementById('route-list');
                 tbody.innerHTML = '';
-                const hostsArr = [];
 
                 for (const [src, target] of Object.entries(config.host_routes || {})) {
-                    hostsArr.push(src);
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td><span class="badge-source">http://${src}</span></td>
@@ -453,10 +583,6 @@
                     tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">등록된 라우팅이 없습니다.</td></tr>';
                 }
 
-                if (hostsArr.length > 0) {
-                    document.getElementById('hosts-copy-text').innerText = '127.0.0.1 ' + hostsArr.join(' ');
-                }
-
                 const mockTbody = document.getElementById('mock-list');
                 mockTbody.innerHTML = '';
                 for (const [path, json] of Object.entries(config.mock_endpoints || {})) {
@@ -474,6 +600,71 @@
                 }
             } catch (e) {
                 console.error(e);
+            }
+        }
+
+        async function loadTcpRoutes() {
+            try {
+                const res = await fetch('/pgate/api/tcp-routes');
+                const routes = await res.json();
+                const tbody = document.getElementById('tcp-list');
+                tbody.innerHTML = '';
+
+                if (Object.keys(routes).length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">등록된 TCP 중계 포트가 없습니다.</td></tr>';
+                    return;
+                }
+
+                for (const [port, target] of Object.entries(routes)) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><span class="badge-source" style="color: var(--purple); background: rgba(192, 132, 252, 0.15);">TCP :${port}</span></td>
+                        <td><span class="badge-target">${target}</span></td>
+                        <td style="text-align: right;"><button class="btn-sm btn-danger" onclick="removeTcpRoute(${port})">삭제</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            } catch (e) {}
+        }
+
+        async function addTcpRoute() {
+            const listen = parseInt(document.getElementById('tcp-listen').value);
+            const target = document.getElementById('tcp-target').value.trim();
+            if (!listen || !target) return alert('수신 포트와 대상 주소를 모두 입력해주세요.');
+
+            const res = await fetch('/pgate/api/tcp-routes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ listen_port: listen, target })
+            });
+            if (res.ok) {
+                document.getElementById('tcp-listen').value = '';
+                document.getElementById('tcp-target').value = '';
+                loadTcpRoutes();
+            }
+        }
+
+        async function removeTcpRoute(port) {
+            if (!confirm(`TCP 포트 ${port} 중계를 삭제하시겠습니까?`)) return;
+            const res = await fetch('/pgate/api/tcp-routes', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ listen_port: port })
+            });
+            if (res.ok) loadTcpRoutes();
+        }
+
+        async function syncHostsAuto() {
+            try {
+                const res = await fetch('/pgate/api/hosts/sync', { method: 'POST' });
+                if (res.ok) {
+                    alert('✅ 윈도우 hosts 파일에 모든 로컬 도메인이 완벽하게 자동 등록되었습니다!');
+                } else {
+                    const data = await res.json();
+                    alert('❌ 등록 실패: ' + (data.error || '관리자 권한이 승인되지 않았습니다.'));
+                }
+            } catch (e) {
+                alert('통신 오류가 발생했습니다.');
             }
         }
 
@@ -523,6 +714,7 @@
             if (type === 'cors') body.enable_cors = document.getElementById('cors-toggle').checked;
             if (type === 'security') body.enable_security_shield = document.getElementById('security-toggle').checked;
             if (type === 'stream') body.enable_stream_booster = document.getElementById('stream-toggle').checked;
+            if (type === 'https') body.enable_https = document.getElementById('https-toggle').checked;
             if (type === 'autostart') body.autostart = document.getElementById('autostart-toggle').checked;
 
             await fetch('/pgate/api/settings', {
@@ -579,9 +771,11 @@
         }
 
         function copyHosts() {
-            const text = document.getElementById('hosts-copy-text').innerText;
-            navigator.clipboard.writeText(text);
-            alert('클립보드에 복사되었습니다! C:\\Windows\\System32\\drivers\\etc\\hosts 에 붙여넣으세요.');
+            fetch('/pgate/api/routes').then(r => r.json()).then(config => {
+                const hosts = Object.keys(config.host_routes || {}).map(d => `127.0.0.1 ${d}`).join('\n');
+                navigator.clipboard.writeText(hosts);
+                alert('클립보드에 복사되었습니다!\n\n' + hosts);
+            });
         }
 
         loadStatus();
@@ -589,7 +783,7 @@
         setInterval(() => {
             loadStatus();
             if (currentTab === 'security') loadSecurityLogs();
-        }, 1500);
+        }, 1000);
     </script>
 </body>
 </html>

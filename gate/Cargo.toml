@@ -1,8 +1,8 @@
 [package]
 name = "vgate"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-description = "Vesper Gate: 초고속 Rust 기반 로컬 리버스 프록시, API 게이트웨이 & 안티 디도스 방패"
+description = "Vesper Gate: 초고속 Rust 기반 로컬 리버스 프록시, L4 TCP 프록시, API 게이트웨이 & 보안 쉴드"
 
 [[bin]]
 name = "vgate"
@@ -18,12 +18,17 @@ hyper = { version = "1.4", features = ["full"] }
 hyper-util = { version = "0.1", features = ["full"] }
 http-body-util = "0.1"
 
+# 로컬 HTTPS / TLS 지원
+rcgen = "0.13"
+tokio-rustls = "0.26"
+rustls-pemfile = "2.1"
+
 # 직렬화 및 설정 파일
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 toml = "0.8"
 
-# 시스템 경로 및 컬러 터미널
+# 시스템 경로 및 유틸리티
 dirs = "5.0"
 colored = "2.1"
 anyhow = "1.0"

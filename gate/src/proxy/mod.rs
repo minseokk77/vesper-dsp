@@ -41,11 +41,24 @@ struct AddMockReq {
 }
 
 #[derive(Deserialize)]
+struct AddTcpRouteReq {
+    listen_port: u16,
+    target: String,
+}
+
+#[derive(Deserialize)]
+struct RemoveTcpRouteReq {
+    listen_port: u16,
+}
+
+#[derive(Deserialize)]
 struct SettingsReq {
     enable_cors: Option<bool>,
     enable_cache: Option<bool>,
     enable_stream_booster: Option<bool>,
     enable_security_shield: Option<bool>,
+    enable_https: Option<bool>,
+    https_port: Option<u16>,
     autostart: Option<bool>,
 }
 
@@ -169,7 +182,72 @@ pub async fn handle_request(
         }
     }
 
-    // 5. 웹 UI 제어용 내부 REST API (/pgate/api/...)
+    // 5. 윈도우 hosts 파일 원클릭 자동 동기화 API (/pgate/api/hosts/sync)
+    if path == "/pgate/api/hosts/sync" && method == Method::POST {
+        let domains: Vec<String> = {
+            let cfg = config_lock.read().unwrap();
+            cfg.host_routes.keys().cloned().collect()
+        };
+        match crate::hosts::sync_hosts_file(&domains) {
+            Ok(_) => {
+                return Ok(Response::builder()
+                    .status(StatusCode::OK)
+                    .header(CONTENT_TYPE, HeaderValue::from_static("application/json; charset=utf-8"))
+                    .body(Full::new(Bytes::from("{\"status\":\"ok\"}")))
+                    .unwrap());
+            }
+            Err(e) => {
+                let err_msg = format!("{{\"error\":\"{}\"}}", e);
+                return Ok(Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .header(CONTENT_TYPE, HeaderValue::from_static("application/json; charset=utf-8"))
+                    .body(Full::new(Bytes::from(err_msg)))
+                    .unwrap());
+            }
+        }
+    }
+
+    // 6. TCP L4 포트 중계 제어 API (/pgate/api/tcp-routes)
+    if path == "/pgate/api/tcp-routes" {
+        match method {
+            Method::GET => {
+                let cfg = config_lock.read().unwrap();
+                let json_val = serde_json::to_string(&cfg.tcp_routes).unwrap_or_default();
+                return Ok(Response::builder()
+                    .status(StatusCode::OK)
+                    .header(CONTENT_TYPE, HeaderValue::from_static("application/json; charset=utf-8"))
+                    .body(Full::new(Bytes::from(json_val)))
+                    .unwrap());
+            }
+            Method::POST => {
+                let body_bytes = req.into_body().collect().await?.to_bytes();
+                if let Ok(data) = serde_json::from_slice::<AddTcpRouteReq>(&body_bytes) {
+                    let mut cfg = config_lock.write().unwrap();
+                    let _ = cfg.add_tcp_route(data.listen_port, &data.target);
+                }
+                return Ok(Response::builder()
+                    .status(StatusCode::OK)
+                    .header(CONTENT_TYPE, HeaderValue::from_static("application/json; charset=utf-8"))
+                    .body(Full::new(Bytes::from("{\"status\":\"ok\"}")))
+                    .unwrap());
+            }
+            Method::DELETE => {
+                let body_bytes = req.into_body().collect().await?.to_bytes();
+                if let Ok(data) = serde_json::from_slice::<RemoveTcpRouteReq>(&body_bytes) {
+                    let mut cfg = config_lock.write().unwrap();
+                    let _ = cfg.remove_tcp_route(data.listen_port);
+                }
+                return Ok(Response::builder()
+                    .status(StatusCode::OK)
+                    .header(CONTENT_TYPE, HeaderValue::from_static("application/json; charset=utf-8"))
+                    .body(Full::new(Bytes::from("{\"status\":\"ok\"}")))
+                    .unwrap());
+            }
+            _ => {}
+        }
+    }
+
+    // 7. 웹 UI 제어용 내부 REST API (/pgate/api/...)
     if path == "/pgate/api/routes" {
         match method {
             Method::GET => {
@@ -246,6 +324,12 @@ pub async fn handle_request(
             }
             if let Some(sec) = data.enable_security_shield {
                 cfg.enable_security_shield = sec;
+            }
+            if let Some(https) = data.enable_https {
+                cfg.enable_https = https;
+            }
+            if let Some(hport) = data.https_port {
+                cfg.https_port = hport;
             }
             if let Some(auto) = data.autostart {
                 if auto {

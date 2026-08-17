@@ -34,6 +34,14 @@ pub struct GatewayConfig {
     #[serde(default = "default_true")]
     pub enable_security_shield: bool,
 
+    /// 로컬 HTTPS (TLS) 활성화 여부
+    #[serde(default = "default_false")]
+    pub enable_https: bool,
+
+    /// HTTPS 리스닝 포트 (기본값: 8443)
+    #[serde(default = "default_https_port")]
+    pub https_port: u16,
+
     /// 도메인(Host) 기반 라우팅 규칙 (예: "app.local" => "http://127.0.0.1:5173")
     #[serde(default)]
     pub host_routes: HashMap<String, String>,
@@ -41,6 +49,10 @@ pub struct GatewayConfig {
     /// 경로(Path) 기반 라우팅 규칙 (예: "/api" => "http://127.0.0.1:8000")
     #[serde(default)]
     pub path_routes: HashMap<String, String>,
+
+    /// 마인크래프트 및 일반 TCP L4 포트 중계 규칙 (예: 25565 => "127.0.0.1:25565")
+    #[serde(default)]
+    pub tcp_routes: HashMap<u16, String>,
 
     /// Mock API 가짜 응답 규칙 (예: "/api/test" => "{\"status\":\"ok\"}")
     #[serde(default)]
@@ -55,8 +67,16 @@ fn default_port() -> u16 {
     DEFAULT_GATEWAY_PORT
 }
 
+fn default_https_port() -> u16 {
+    8443
+}
+
 fn default_true() -> bool {
     true
+}
+
+fn default_false() -> bool {
+    false
 }
 
 impl Default for GatewayConfig {
@@ -81,8 +101,11 @@ impl Default for GatewayConfig {
             enable_cache: true,
             enable_stream_booster: true,
             enable_security_shield: true,
+            enable_https: false,
+            https_port: default_https_port(),
             host_routes,
             path_routes: HashMap::new(),
+            tcp_routes: HashMap::new(),
             mock_endpoints,
         }
     }
@@ -171,5 +194,26 @@ impl GatewayConfig {
         self.mock_endpoints.insert(path, parsed.to_string());
         self.save()?;
         Ok(())
+    }
+
+    /// TCP L4 포트 중계 추가 (예: 25565 => "127.0.0.1:25565")
+    pub fn add_tcp_route(&mut self, listen_port: u16, target: &str) -> Result<()> {
+        let formatted = if target.contains(':') {
+            target.to_string()
+        } else {
+            format!("127.0.0.1:{}", target)
+        };
+        self.tcp_routes.insert(listen_port, formatted);
+        self.save()?;
+        Ok(())
+    }
+
+    /// TCP L4 포트 중계 제거
+    pub fn remove_tcp_route(&mut self, listen_port: u16) -> Result<bool> {
+        let removed = self.tcp_routes.remove(&listen_port).is_some();
+        if removed {
+            self.save()?;
+        }
+        Ok(removed)
     }
 }

@@ -5,8 +5,11 @@ mod cli;
 mod config;
 mod daemon;
 mod error;
+mod hosts;
 mod proxy;
 mod stats;
+mod tcp_proxy;
+mod tls;
 mod tray;
 
 use clap::Parser;
@@ -242,10 +245,56 @@ async fn start_server(config: GatewayConfig) -> Result<(), Box<dyn std::error::E
     // 윈도우 순수 Win32 시스템 트레이 메시지 펌프 스레드 실행
     run_tray_thread(dashboard_url);
 
-    let config_lock = Arc::new(RwLock::new(config));
+    let config_lock = Arc::new(RwLock::new(config.clone()));
     let stats_arc = Arc::new(GatewayStats::new());
     let stream_cache = Arc::new(crate::proxy::stream_booster::StreamBufferCache::new());
     let security_buffer = Arc::new(crate::proxy::security::SecurityLogBuffer::new());
+
+    // 1. 마인크래프트 & 일반 TCP L4 포트 중계 매니저 구동
+    let tcp_routes_lock = Arc::new(RwLock::new(config.tcp_routes.clone()));
+    let mut tcp_mgr = crate::tcp_proxy::TcpProxyManager::new();
+    tcp_mgr.start_listeners(tcp_routes_lock);
+
+    // 2. 로컬 HTTPS (포트 8443) 백그라운드 서버 가동
+    if let Ok(tls_acceptor) = crate::tls::load_or_generate_tls_config() {
+        let https_addr = format!("{}:{}", config.host, config.https_port);
+        if let Ok(https_listener) = TcpListener::bind(&https_addr).await {
+            println!("  • 로컬 HTTPS   : {}", format!("https://{}:{}", config.host, config.https_port).cyan().bold());
+            let cfg_https = Arc::clone(&config_lock);
+            let stats_https = Arc::clone(&stats_arc);
+            let sc_https = Arc::clone(&stream_cache);
+            let sec_https = Arc::clone(&security_buffer);
+
+            tokio::spawn(async move {
+                while let Ok((stream, remote_addr)) = https_listener.accept().await {
+                    let client_ip = remote_addr.ip().to_string();
+                    let acceptor = tls_acceptor.clone();
+                    let cfg_clone = Arc::clone(&cfg_https);
+                    let stats_clone = Arc::clone(&stats_https);
+                    let sc_clone = Arc::clone(&sc_https);
+                    let sec_clone = Arc::clone(&sec_https);
+
+                    tokio::spawn(async move {
+                        if let Ok(tls_stream) = acceptor.accept(stream).await {
+                            let io = TokioIo::new(tls_stream);
+                            let service = hyper::service::service_fn(move |req| {
+                                let cfg = Arc::clone(&cfg_clone);
+                                let st = Arc::clone(&stats_clone);
+                                let sc = Arc::clone(&sc_clone);
+                                let sec = Arc::clone(&sec_clone);
+                                let ip = client_ip.clone();
+                                async move { handle_request(req, cfg, st, sc, sec, ip).await }
+                            });
+
+                            let _ = auto::Builder::new(hyper_util::rt::TokioExecutor::new())
+                                .serve_connection(io, service)
+                                .await;
+                        }
+                    });
+                }
+            });
+        }
+    }
 
     loop {
         let (stream, remote_addr) = listener.accept().await?;
