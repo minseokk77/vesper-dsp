@@ -77,8 +77,11 @@ unsafe fn win32_tray_loop(dashboard_url: String) {
         return;
     }
 
-    // 기본 시스템 아이콘 로드 (Windows 표준 애플리케이션 아이콘)
-    let h_icon = LoadIconW(std::ptr::null_mut(), IDI_APPLICATION);
+    // 임베드된 커스텀 모던 아이콘(리소스 ID 1) 로드, 실패 시 IDI_APPLICATION 폴백
+    let mut h_icon = LoadIconW(h_instance, 1 as *const u16);
+    if h_icon == std::ptr::null_mut() {
+        h_icon = LoadIconW(std::ptr::null_mut(), IDI_APPLICATION);
+    }
 
     let mut nid: NOTIFYICONDATAW = std::mem::zeroed();
     nid.cbSize = std::mem::size_of::<NOTIFYICONDATAW>() as u32;
@@ -88,8 +91,8 @@ unsafe fn win32_tray_loop(dashboard_url: String) {
     nid.uCallbackMessage = WM_TRAY_CALLBACK;
     nid.hIcon = h_icon;
 
-    // 툴팁 설정 ("pgate 로컬 게이트웨이")
-    let tip = wide_str("pgate 로컬 게이트웨이");
+    // 툴팁 설정 ("Vesper Gate (로컬 만능 게이트웨이 & 보안 쉴드)")
+    let tip = wide_str("Vesper Gate (로컬 만능 게이트웨이 & 보안 쉴드)");
     let copy_len = tip.len().min(nid.szTip.len() - 1);
     std::ptr::copy_nonoverlapping(tip.as_ptr(), nid.szTip.as_mut_ptr(), copy_len);
 
