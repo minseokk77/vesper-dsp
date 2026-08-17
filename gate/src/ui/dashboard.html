@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vesper Gate - 로컬 만능 게이트웨이 대시보드</title>
+    <title>Vesper Gate - 로컬 만능 게이트웨이 & 보안 쉴드 대시보드</title>
     <style>
         :root {
             --bg: #090d16;
@@ -17,6 +17,7 @@
             --accent: #10b981;
             --stream: #38bdf8;
             --danger: #f43f5e;
+            --warning: #f59e0b;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
             --radius: 16px;
@@ -34,7 +35,7 @@
             justify-content: center;
         }
 
-        .container { width: 100%; max-width: 980px; }
+        .container { width: 100%; max-width: 1020px; }
 
         header {
             display: flex;
@@ -173,9 +174,13 @@
         .badge-source { background: rgba(129, 140, 248, 0.15); color: var(--primary); padding: 4px 8px; border-radius: 6px; font-family: monospace; font-size: 13px; }
         .badge-target { color: #f59e0b; font-family: monospace; font-size: 13px; }
 
-        .tab-menu { display: flex; gap: 8px; margin-bottom: 20px; }
+        .tab-menu { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
         .tab-btn { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 8px 16px; border-radius: 10px; font-size: 13px; }
         .tab-btn.active { background: var(--primary); color: #090d16; font-weight: 700; border-color: var(--primary); }
+
+        .badge-threat-critical { background: rgba(244, 63, 94, 0.2); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
+        .badge-threat-high { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
+        .badge-threat-medium { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
 
         .helper-box {
             background: rgba(30, 41, 59, 0.4);
@@ -201,7 +206,7 @@
                 <div class="logo-badge">V</div>
                 <div class="logo-title">
                     <h1>Vesper Gate</h1>
-                    <p>로컬 만능 리버스 프록시, API 게이트웨이 & 방패</p>
+                    <p>로컬 만능 리버스 프록시 & 보안 쉴드(WAF)</p>
                 </div>
             </div>
             <div class="status-badge">
@@ -216,15 +221,19 @@
                 <div class="metric-value" id="metric-total">0</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">초고속 캐시 / Mock 응답</div>
-                <div class="metric-value" id="metric-cache" style="color: var(--accent);">0</div>
+                <div class="metric-label">🛡️ 차단된 보안 위협</div>
+                <div class="metric-value" id="metric-threats" style="color: var(--danger);">0</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">📺 치지직/HLS 완충 스트림</div>
+                <div class="metric-label">📺 치지직/HLS 완충</div>
                 <div class="metric-value" id="metric-stream" style="color: var(--stream);">0</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">서버 가동 시간 (Uptime)</div>
+                <div class="metric-label">초고속 캐시 응답</div>
+                <div class="metric-value" id="metric-cache" style="color: var(--accent);">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">서버 가동 시간</div>
                 <div class="metric-value" id="metric-uptime">0s</div>
             </div>
         </div>
@@ -234,6 +243,17 @@
                 <h2>⚡ 간편 토글 스위치 설정</h2>
             </div>
             <div class="switches-grid">
+                <div class="switch-item">
+                    <div class="switch-info">
+                        <h3>🛡️ 악성 봇 / 침입 탐지 쉴드</h3>
+                        <p>해킹 스캐너, .env 탈취, SQLi 즉시 탐지 및 차단</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="security-toggle" onchange="toggleSetting('security')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
                 <div class="switch-item">
                     <div class="switch-info">
                         <h3>📺 치지직/스트리밍 완충 부스터</h3>
@@ -258,17 +278,6 @@
 
                 <div class="switch-item">
                     <div class="switch-info">
-                        <h3>초고속 램(RAM) 캐싱</h3>
-                        <p>동일 요청을 메모리에서 0.1ms 응답</p>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="cache-toggle" onchange="toggleSetting('cache')">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div class="switch-item">
-                    <div class="switch-info">
                         <h3>부팅 시 자동 시작</h3>
                         <p>컴퓨터 켤 때마다 백그라운드 상시 가동</p>
                     </div>
@@ -283,6 +292,7 @@
         <div class="card">
             <div class="tab-menu">
                 <button class="tab-btn active" id="tab-btn-route" onclick="switchTab('route')">🌐 도메인 / 포트 라우팅</button>
+                <button class="tab-btn" id="tab-btn-security" onclick="switchTab('security')">🛡️ 실시간 보안 위협 로그 (<span id="tab-threat-count">0</span>)</button>
                 <button class="tab-btn" id="tab-btn-mock" onclick="switchTab('mock')">🎭 가짜 API (Mock) 응답</button>
             </div>
 
@@ -310,6 +320,27 @@
                     <span>💡 윈도우 <code>hosts</code> 파일 등록용 텍스트: <code id="hosts-copy-text">127.0.0.1 app.local api.local</code></span>
                     <button class="btn-sm btn-secondary" onclick="copyHosts()">복사</button>
                 </div>
+            </div>
+
+            <div id="tab-content-security" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <span style="font-size: 13px; color: var(--text-muted);">실시간으로 감지되어 안전하게 차단된 침입/스캔 로그입니다.</span>
+                    <button class="btn-sm btn-secondary" onclick="clearSecurityLogs()">🗑️ 로그 비우기</button>
+                </div>
+
+                <table class="route-table">
+                    <thead>
+                        <tr>
+                            <th>시간 / IP</th>
+                            <th>시도된 공격 경로</th>
+                            <th>탐지된 위협 유형</th>
+                            <th style="text-align: right;">조치</th>
+                        </tr>
+                    </thead>
+                    <tbody id="security-list">
+                        <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">감지된 보안 위협이 없습니다. 시스템이 안전합니다! 🛡️</td></tr>
+                    </tbody>
+                </table>
             </div>
 
             <div id="tab-content-mock" style="display: none;">
@@ -345,9 +376,14 @@
         function switchTab(tab) {
             currentTab = tab;
             document.getElementById('tab-btn-route').className = tab === 'route' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('tab-btn-security').className = tab === 'security' ? 'tab-btn active' : 'tab-btn';
             document.getElementById('tab-btn-mock').className = tab === 'mock' ? 'tab-btn active' : 'tab-btn';
+            
             document.getElementById('tab-content-route').style.display = tab === 'route' ? 'block' : 'none';
+            document.getElementById('tab-content-security').style.display = tab === 'security' ? 'block' : 'none';
             document.getElementById('tab-content-mock').style.display = tab === 'mock' ? 'block' : 'none';
+
+            if (tab === 'security') loadSecurityLogs();
         }
 
         async function loadStatus() {
@@ -358,6 +394,10 @@
                 document.getElementById('metric-cache').innerText = data.cache_hits.toLocaleString();
                 if (data.stream_buffered !== undefined) {
                     document.getElementById('metric-stream').innerText = data.stream_buffered.toLocaleString();
+                }
+                if (data.threats_blocked !== undefined) {
+                    document.getElementById('metric-threats').innerText = data.threats_blocked.toLocaleString();
+                    document.getElementById('tab-threat-count').innerText = data.threats_blocked.toLocaleString();
                 }
                 document.getElementById('metric-uptime').innerText = formatUptime(data.uptime_seconds);
             } catch (e) {}
@@ -374,7 +414,9 @@
                 const res = await fetch('/pgate/api/routes');
                 const config = await res.json();
                 document.getElementById('cors-toggle').checked = config.enable_cors;
-                document.getElementById('cache-toggle').checked = config.enable_cache;
+                if (config.enable_security_shield !== undefined) {
+                    document.getElementById('security-toggle').checked = config.enable_security_shield;
+                }
                 if (config.enable_stream_booster !== undefined) {
                     document.getElementById('stream-toggle').checked = config.enable_stream_booster;
                 }
@@ -435,10 +477,51 @@
             }
         }
 
+        async function loadSecurityLogs() {
+            try {
+                const res = await fetch('/pgate/api/security-logs');
+                const logs = await res.json();
+                const tbody = document.getElementById('security-list');
+                tbody.innerHTML = '';
+
+                if (logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px;">감지된 보안 위협이 없습니다. 시스템이 안전합니다! 🛡️</td></tr>';
+                    return;
+                }
+
+                for (const event of logs) {
+                    let badgeClass = 'badge-threat-medium';
+                    if (event.severity === 'CRITICAL') badgeClass = 'badge-threat-critical';
+                    else if (event.severity === 'HIGH') badgeClass = 'badge-threat-high';
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>
+                            <div style="font-size: 12px; color: var(--text-muted);">${event.timestamp}</div>
+                            <div style="font-family: monospace; font-size: 13px; font-weight: bold; color: var(--primary);">${event.client_ip}</div>
+                        </td>
+                        <td><code style="color: #f43f5e; font-size: 13px; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">${event.method} ${event.path}</code></td>
+                        <td>
+                            <span class="${badgeClass}">${event.severity}</span>
+                            <span style="font-size: 13px; margin-left: 6px; color: var(--text-main);">${event.threat_type}</span>
+                        </td>
+                        <td style="text-align: right;"><span style="color: var(--danger); font-size: 12px; font-weight: 600;">🚫 ${event.action}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            } catch (e) {}
+        }
+
+        async function clearSecurityLogs() {
+            if (!confirm('보안 로그를 모두 비우시겠습니까?')) return;
+            await fetch('/pgate/api/security-logs', { method: 'DELETE' });
+            loadSecurityLogs();
+        }
+
         async function toggleSetting(type) {
             let body = {};
             if (type === 'cors') body.enable_cors = document.getElementById('cors-toggle').checked;
-            if (type === 'cache') body.enable_cache = document.getElementById('cache-toggle').checked;
+            if (type === 'security') body.enable_security_shield = document.getElementById('security-toggle').checked;
             if (type === 'stream') body.enable_stream_booster = document.getElementById('stream-toggle').checked;
             if (type === 'autostart') body.autostart = document.getElementById('autostart-toggle').checked;
 
@@ -503,7 +586,10 @@
 
         loadStatus();
         loadConfig();
-        setInterval(loadStatus, 1500);
+        setInterval(() => {
+            loadStatus();
+            if (currentTab === 'security') loadSecurityLogs();
+        }, 1500);
     </script>
 </body>
 </html>

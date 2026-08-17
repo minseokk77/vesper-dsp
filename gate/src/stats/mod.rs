@@ -9,6 +9,7 @@ pub struct GatewayStats {
     cache_hits: AtomicU64,
     errors_502: AtomicU64,
     stream_buffered: AtomicU64,
+    threats_blocked: AtomicU64,
 }
 
 #[derive(Serialize)]
@@ -18,6 +19,7 @@ pub struct StatsSnapshot {
     pub cache_hits: u64,
     pub errors_502: u64,
     pub stream_buffered: u64,
+    pub threats_blocked: u64,
 }
 
 impl Default for GatewayStats {
@@ -34,6 +36,7 @@ impl GatewayStats {
             cache_hits: AtomicU64::new(0),
             errors_502: AtomicU64::new(0),
             stream_buffered: AtomicU64::new(0),
+            threats_blocked: AtomicU64::new(0),
         }
     }
 
@@ -49,6 +52,10 @@ impl GatewayStats {
         self.stream_buffered.fetch_add(1, Ordering::Relaxed);
     }
 
+    pub fn record_threat_blocked(&self) {
+        self.threats_blocked.fetch_add(1, Ordering::Relaxed);
+    }
+
     pub fn record_502(&self) {
         self.errors_502.fetch_add(1, Ordering::Relaxed);
     }
@@ -60,6 +67,7 @@ impl GatewayStats {
             cache_hits: self.cache_hits.load(Ordering::Relaxed),
             errors_502: self.errors_502.load(Ordering::Relaxed),
             stream_buffered: self.stream_buffered.load(Ordering::Relaxed),
+            threats_blocked: self.threats_blocked.load(Ordering::Relaxed),
         }
     }
 }

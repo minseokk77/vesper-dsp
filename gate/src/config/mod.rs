@@ -30,6 +30,10 @@ pub struct GatewayConfig {
     #[serde(default = "default_true")]
     pub enable_stream_booster: bool,
 
+    /// 악성 봇 및 수상한 접근 침입 탐지/차단(WAF) 활성화 여부
+    #[serde(default = "default_true")]
+    pub enable_security_shield: bool,
+
     /// 도메인(Host) 기반 라우팅 규칙 (예: "app.local" => "http://127.0.0.1:5173")
     #[serde(default)]
     pub host_routes: HashMap<String, String>,
@@ -76,6 +80,7 @@ impl Default for GatewayConfig {
             enable_cors: true,
             enable_cache: true,
             enable_stream_booster: true,
+            enable_security_shield: true,
             host_routes,
             path_routes: HashMap::new(),
             mock_endpoints,

@@ -1,11 +1,12 @@
 pub mod cors;
 pub mod mock;
 pub mod stream_booster;
+pub mod security;
 
 use std::sync::{Arc, RwLock};
 use hyper::{Method, Request, Response, StatusCode};
 use hyper::body::Incoming;
-use hyper::header::{HeaderValue, CONTENT_TYPE, HOST};
+use hyper::header::{HeaderValue, CONTENT_TYPE, HOST, USER_AGENT};
 use http_body_util::{BodyExt, Full};
 use bytes::Bytes;
 use hyper_util::rt::TokioIo;
@@ -17,6 +18,7 @@ use crate::stats::GatewayStats;
 use crate::proxy::cors::{handle_preflight, inject_cors_headers};
 use crate::proxy::mock::handle_mock_response;
 use crate::proxy::stream_booster::StreamBufferCache;
+use crate::proxy::security::{SecurityLogBuffer, inspect_threat};
 use crate::autostart::{enable_autostart, disable_autostart, is_autostart_enabled};
 
 const DASHBOARD_HTML: &str = include_str!("../ui/dashboard.html");
@@ -43,6 +45,7 @@ struct SettingsReq {
     enable_cors: Option<bool>,
     enable_cache: Option<bool>,
     enable_stream_booster: Option<bool>,
+    enable_security_shield: Option<bool>,
     autostart: Option<bool>,
 }
 
@@ -52,12 +55,66 @@ pub async fn handle_request(
     config_lock: Arc<RwLock<GatewayConfig>>,
     stats: Arc<GatewayStats>,
     stream_cache: Arc<StreamBufferCache>,
+    security_buffer: Arc<SecurityLogBuffer>,
+    client_ip: String,
 ) -> std::result::Result<Response<Full<Bytes>>, hyper::Error> {
     stats.record_request();
 
     let path = req.uri().path().to_string();
     let query = req.uri().query().unwrap_or("").to_string();
     let method = req.method().clone();
+    let user_agent = req.headers()
+        .get(USER_AGENT)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+
+    // 0. 보안 쉴드(WAF): 수상한 접근 및 악성 공격 실시간 검사 & 차단
+    {
+        let cfg = config_lock.read().unwrap();
+        if cfg.enable_security_shield && !path.starts_with("/pgate") {
+            if let Some(threat) = inspect_threat(method.as_str(), &path, &query, &user_agent, &client_ip) {
+                security_buffer.record(threat.clone());
+                stats.record_threat_blocked();
+
+                let block_html = format!(
+                    r#"<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>403 Forbidden - Vesper Gate Security Shield</title>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #090d16; color: #f8fafc; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }}
+        .card {{ background: rgba(26, 16, 28, 0.85); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: 16px; padding: 32px; max-width: 520px; box-shadow: 0 8px 32px rgba(244, 63, 94, 0.2); text-align: center; }}
+        h1 {{ color: #f43f5e; font-size: 24px; margin-bottom: 12px; }}
+        p {{ color: #94a3b8; font-size: 14px; line-height: 1.6; }}
+        .badge {{ background: rgba(244, 63, 94, 0.15); color: #f43f5e; padding: 6px 12px; border-radius: 8px; font-weight: bold; font-size: 13px; display: inline-block; margin: 12px 0; }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🛡️ 403 Forbidden (접근 차단됨)</h1>
+        <div class="badge">{}</div>
+        <p>Vesper Gate 보안 쉴드가 비정상적이거나 악의적인 접근 시도를 감지하여 요청을 안전하게 차단했습니다.</p>
+        <p style="font-size: 12px; color: #64748b; margin-top: 16px;">IP: {} | 시간: {}</p>
+    </div>
+</body>
+</html>"#,
+                    threat.threat_type, threat.client_ip, threat.timestamp
+                );
+
+                let mut resp = Response::builder()
+                    .status(StatusCode::FORBIDDEN)
+                    .header(CONTENT_TYPE, HeaderValue::from_static("text/html; charset=utf-8"))
+                    .body(Full::new(Bytes::from(block_html)))
+                    .unwrap();
+                if cfg.enable_cors {
+                    inject_cors_headers(resp.headers_mut());
+                }
+                return Ok(resp);
+            }
+        }
+    }
 
     // 1. CORS Preflight (OPTIONS) 요청 가로채기
     {
@@ -88,7 +145,31 @@ pub async fn handle_request(
             .unwrap());
     }
 
-    // 4. 웹 UI 제어용 내부 REST API (/pgate/api/...)
+    // 4. 보안 위협 로그 조회/초기화 API (/pgate/api/security-logs)
+    if path == "/pgate/api/security-logs" {
+        match method {
+            Method::GET => {
+                let logs = security_buffer.get_recent_events();
+                let json_val = serde_json::to_string(&logs).unwrap_or_default();
+                return Ok(Response::builder()
+                    .status(StatusCode::OK)
+                    .header(CONTENT_TYPE, HeaderValue::from_static("application/json; charset=utf-8"))
+                    .body(Full::new(Bytes::from(json_val)))
+                    .unwrap());
+            }
+            Method::DELETE => {
+                security_buffer.clear();
+                return Ok(Response::builder()
+                    .status(StatusCode::OK)
+                    .header(CONTENT_TYPE, HeaderValue::from_static("application/json; charset=utf-8"))
+                    .body(Full::new(Bytes::from("{\"status\":\"cleared\"}")))
+                    .unwrap());
+            }
+            _ => {}
+        }
+    }
+
+    // 5. 웹 UI 제어용 내부 REST API (/pgate/api/...)
     if path == "/pgate/api/routes" {
         match method {
             Method::GET => {
@@ -163,6 +244,9 @@ pub async fn handle_request(
             if let Some(booster) = data.enable_stream_booster {
                 cfg.enable_stream_booster = booster;
             }
+            if let Some(sec) = data.enable_security_shield {
+                cfg.enable_security_shield = sec;
+            }
             if let Some(auto) = data.autostart {
                 if auto {
                     let _ = enable_autostart();
@@ -179,7 +263,7 @@ pub async fn handle_request(
             .unwrap());
     }
 
-    // 5. Mock API 엔드포인트 가로채기
+    // 6. Mock API 엔드포인트 가로채기
     let (enable_cors, enable_stream_booster, mock_hit, target_backend) = {
         let cfg = config_lock.read().unwrap();
         let mock = cfg.mock_endpoints.get(&path).cloned();
@@ -206,7 +290,7 @@ pub async fn handle_request(
         return Ok(handle_mock_response(&mock_json, enable_cors));
     }
 
-    // 6. 치지직/HLS 스트리밍 완충 캐시 확인 (.ts, .m4s)
+    // 7. 치지직/HLS 스트리밍 완충 캐시 확인 (.ts, .m4s)
     let full_req_uri = if query.is_empty() { path.clone() } else { format!("{}?{}", path, query) };
     if enable_stream_booster && (path.ends_with(".ts") || path.ends_with(".m4s") || path.ends_with(".mp4")) {
         if let Some(cached_chunk) = stream_cache.get(&full_req_uri) {
@@ -268,7 +352,7 @@ pub async fn handle_request(
         }
     };
 
-    // 7. 백엔드로 프록시 전달 및 m3u8 프리페치 파싱
+    // 8. 백엔드로 프록시 전달 및 m3u8 프리페치 파싱
     match forward_to_backend(req, &backend_url, enable_cors).await {
         Ok(resp) => {
             // m3u8 플레이리스트인 경우 백그라운드 프리페치 파싱
