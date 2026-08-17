@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vesper Gate - 로컬 만능 게이트웨이 대시보드</title>
+    <style>
+        :root {
+            --bg: #090d16;
+            --surface: rgba(18, 24, 38, 0.75);
+            --surface-card: rgba(22, 30, 48, 0.65);
+            --surface-hover: rgba(30, 41, 59, 0.8);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-active: rgba(129, 140, 248, 0.4);
+            --primary: #818cf8;
+            --primary-glow: rgba(129, 140, 248, 0.25);
+            --accent: #10b981;
+            --danger: #f43f5e;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --radius: 16px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at 50% 0%, rgba(129, 140, 248, 0.12) 0%, transparent 60%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 32px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container { width: 100%; max-width: 980px; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo-badge {
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 18px;
+            letter-spacing: -0.5px;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+        .logo-title h1 { font-size: 20px; font-weight: 700; }
+        .logo-title p { font-size: 13px; color: var(--text-muted); }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--accent);
+            padding: 6px 16px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .metric-card {
+            background: var(--surface);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+        }
+        .metric-label { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+        .metric-value { font-size: 22px; font-weight: 700; color: var(--primary); }
+
+        .card {
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .card-header h2 { font-size: 17px; font-weight: 600; }
+
+        .switches-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+        }
+        .switch-item {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .switch-info h3 { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+        .switch-info p { font-size: 12px; color: var(--text-muted); }
+
+        .switch { position: relative; display: inline-block; width: 46px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.15); transition: .3s; border-radius: 26px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 640px) { .input-group { grid-template-columns: 1fr; } }
+        input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: var(--text-main);
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 12px var(--primary-glow); }
+
+        button {
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:hover { transform: translateY(-1px); box-shadow: 0 4px 16px var(--primary-glow); }
+        button.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+        button.btn-danger { background: rgba(244, 63, 94, 0.15); color: var(--danger); border: 1px solid rgba(244, 63, 94, 0.3); }
+        button.btn-danger:hover { background: var(--danger); color: white; }
+        button.btn-secondary { background: rgba(255,255,255,0.08); color: var(--text-main); }
+        button.btn-secondary:hover { background: rgba(255,255,255,0.15); }
+
+        .route-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .route-table th { text-align: left; padding: 12px; font-size: 13px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+        .route-table td { padding: 14px 12px; font-size: 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .badge-source { background: rgba(129, 140, 248, 0.15); color: var(--primary); padding: 4px 8px; border-radius: 6px; font-family: monospace; font-size: 13px; }
+        .badge-target { color: #f59e0b; font-family: monospace; font-size: 13px; }
+
+        .tab-menu { display: flex; gap: 8px; margin-bottom: 20px; }
+        .tab-btn { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 8px 16px; border-radius: 10px; font-size: 13px; }
+        .tab-btn.active { background: var(--primary); color: #090d16; font-weight: 700; border-color: var(--primary); }
+
+        .helper-box {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-top: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .helper-box code { color: var(--primary); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; }
+        .footer-note { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 32px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-badge">V</div>
+                <div class="logo-title">
+                    <h1>Vesper Gate</h1>
+                    <p>로컬 만능 리버스 프록시, API 게이트웨이 & 방패</p>
+                </div>
+            </div>
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                <span id="status-text">가동 중 (포트: 8080)</span>
+            </div>
+        </header>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">총 처리된 요청 수</div>
+                <div class="metric-value" id="metric-total">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">초고속 캐시 / Mock 응답</div>
+                <div class="metric-value" id="metric-cache" style="color: var(--accent);">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">서버 가동 시간 (Uptime)</div>
+                <div class="metric-value" id="metric-uptime">0s</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>⚡ 간편 토글 스위치 설정</h2>
+            </div>
+            <div class="switches-grid">
+                <div class="switch-item">
+                    <div class="switch-info">
+                        <h3>CORS 자동 해결</h3>
+                        <p>프론트/백엔드 통신 에러 1초 박멸</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="cors-toggle" onchange="toggleSetting('cors')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="switch-item">
+                    <div class="switch-info">
+                        <h3>초고속 램(RAM) 캐싱</h3>
+                        <p>동일 요청을 메모리에서 0.1ms 응답</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="cache-toggle" onchange="toggleSetting('cache')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="switch-item">
+                    <div class="switch-info">
+                        <h3>부팅 시 자동 시작</h3>
+                        <p>컴퓨터 켤 때마다 백그라운드 상시 가동</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="autostart-toggle" onchange="toggleSetting('autostart')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="tab-menu">
+                <button class="tab-btn active" id="tab-btn-route" onclick="switchTab('route')">🌐 도메인 / 포트 라우팅</button>
+                <button class="tab-btn" id="tab-btn-mock" onclick="switchTab('mock')">🎭 가짜 API (Mock) 응답</button>
+            </div>
+
+            <div id="tab-content-route">
+                <div class="input-group">
+                    <input type="text" id="route-source" placeholder="도메인 입력 (예: app.local 또는 /api)">
+                    <input type="text" id="route-target" placeholder="대상 포트 또는 URL (예: 5173 또는 8000)">
+                    <button onclick="addRoute()">연결 추가</button>
+                </div>
+
+                <table class="route-table">
+                    <thead>
+                        <tr>
+                            <th>요청 도메인 / 경로</th>
+                            <th>대상 로컬 서버 (포트)</th>
+                            <th style="text-align: right;">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="route-list">
+                        <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">불러오는 중...</td></tr>
+                    </tbody>
+                </table>
+
+                <div class="helper-box">
+                    <span>💡 윈도우 <code>hosts</code> 파일 등록용 텍스트: <code id="hosts-copy-text">127.0.0.1 app.local api.local</code></span>
+                    <button class="btn-sm btn-secondary" onclick="copyHosts()">복사</button>
+                </div>
+            </div>
+
+            <div id="tab-content-mock" style="display: none;">
+                <div class="input-group">
+                    <input type="text" id="mock-path" placeholder="API 경로 (예: /api/user)">
+                    <input type="text" id="mock-json" placeholder='반환할 JSON (예: {"id":1,"name":"홍길동"})'>
+                    <button onclick="addMock()">Mock 등록</button>
+                </div>
+
+                <table class="route-table">
+                    <thead>
+                        <tr>
+                            <th>가짜 API 경로</th>
+                            <th>응답 JSON 데이터</th>
+                            <th style="text-align: right;">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mock-list">
+                        <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">불러오는 중...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            ⚡ <b>Vesper Ecosystem:</b> 이 앱을 삭제하고 싶을 때는 윈도우 제어판(설치된 앱)에서 <b>Vesper Gate</b>를 [제거]하시면 됩니다.
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 'route';
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('tab-btn-route').className = tab === 'route' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('tab-btn-mock').className = tab === 'mock' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('tab-content-route').style.display = tab === 'route' ? 'block' : 'none';
+            document.getElementById('tab-content-mock').style.display = tab === 'mock' ? 'block' : 'none';
+        }
+
+        async function loadStatus() {
+            try {
+                const res = await fetch('/pgate/status');
+                const data = await res.json();
+                document.getElementById('metric-total').innerText = data.total_requests.toLocaleString();
+                document.getElementById('metric-cache').innerText = data.cache_hits.toLocaleString();
+                document.getElementById('metric-uptime').innerText = formatUptime(data.uptime_seconds);
+            } catch (e) {}
+        }
+
+        function formatUptime(sec) {
+            if (sec < 60) return sec + '초';
+            if (sec < 3600) return Math.floor(sec / 60) + '분 ' + (sec % 60) + '초';
+            return Math.floor(sec / 3600) + '시간 ' + Math.floor((sec % 3600) / 60) + '분';
+        }
+
+        async function loadConfig() {
+            try {
+                const res = await fetch('/pgate/api/routes');
+                const config = await res.json();
+                document.getElementById('cors-toggle').checked = config.enable_cors;
+                document.getElementById('cache-toggle').checked = config.enable_cache;
+                if (config.autostart !== undefined) {
+                    document.getElementById('autostart-toggle').checked = config.autostart;
+                }
+
+                const tbody = document.getElementById('route-list');
+                tbody.innerHTML = '';
+                const hostsArr = [];
+
+                for (const [src, target] of Object.entries(config.host_routes || {})) {
+                    hostsArr.push(src);
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><span class="badge-source">http://${src}</span></td>
+                        <td><span class="badge-target">${target}</span></td>
+                        <td style="text-align: right;"><button class="btn-sm btn-danger" onclick="removeRoute('${src}')">삭제</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+
+                for (const [src, target] of Object.entries(config.path_routes || {})) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><span class="badge-source">${src}</span></td>
+                        <td><span class="badge-target">${target}</span></td>
+                        <td style="text-align: right;"><button class="btn-sm btn-danger" onclick="removeRoute('${src}')">삭제</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+
+                if (tbody.children.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">등록된 라우팅이 없습니다.</td></tr>';
+                }
+
+                if (hostsArr.length > 0) {
+                    document.getElementById('hosts-copy-text').innerText = '127.0.0.1 ' + hostsArr.join(' ');
+                }
+
+                const mockTbody = document.getElementById('mock-list');
+                mockTbody.innerHTML = '';
+                for (const [path, json] of Object.entries(config.mock_endpoints || {})) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><span class="badge-source">${path}</span></td>
+                        <td><span style="font-family: monospace; font-size: 13px; color: var(--text-muted);">${json}</span></td>
+                        <td style="text-align: right;"><button class="btn-sm btn-danger" onclick="removeRoute('${path}')">삭제</button></td>
+                    `;
+                    mockTbody.appendChild(tr);
+                }
+
+                if (mockTbody.children.length === 0) {
+                    mockTbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">등록된 Mock이 없습니다.</td></tr>';
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function toggleSetting(type) {
+            let body = {};
+            if (type === 'cors') body.enable_cors = document.getElementById('cors-toggle').checked;
+            if (type === 'cache') body.enable_cache = document.getElementById('cache-toggle').checked;
+            if (type === 'autostart') body.autostart = document.getElementById('autostart-toggle').checked;
+
+            await fetch('/pgate/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+        }
+
+        async function addRoute() {
+            const source = document.getElementById('route-source').value.trim();
+            const target = document.getElementById('route-target').value.trim();
+            if (!source || !target) return alert('도메인과 대상 포트를 모두 입력해주세요.');
+
+            const res = await fetch('/pgate/api/routes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ source, target })
+            });
+            if (res.ok) {
+                document.getElementById('route-source').value = '';
+                document.getElementById('route-target').value = '';
+                loadConfig();
+            }
+        }
+
+        async function addMock() {
+            const path = document.getElementById('mock-path').value.trim();
+            const json = document.getElementById('mock-json').value.trim();
+            if (!path || !json) return alert('경로와 JSON 데이터를 입력해주세요.');
+
+            const res = await fetch('/pgate/api/mock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path, json })
+            });
+            if (res.ok) {
+                document.getElementById('mock-path').value = '';
+                document.getElementById('mock-json').value = '';
+                loadConfig();
+            } else {
+                alert('올바른 JSON 형식인지 확인해주세요.');
+            }
+        }
+
+        async function removeRoute(source) {
+            if (!confirm(`'${source}' 항목을 삭제하시겠습니까?`)) return;
+            const res = await fetch('/pgate/api/routes', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ source })
+            });
+            if (res.ok) loadConfig();
+        }
+
+        function copyHosts() {
+            const text = document.getElementById('hosts-copy-text').innerText;
+            navigator.clipboard.writeText(text);
+            alert('클립보드에 복사되었습니다! C:\\Windows\\System32\\drivers\\etc\\hosts 에 붙여넣으세요.');
+        }
+
+        loadStatus();
+        loadConfig();
+        setInterval(loadStatus, 1500);
+    </script>
+</body>
+</html>

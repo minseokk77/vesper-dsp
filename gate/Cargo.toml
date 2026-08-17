@@ -1,0 +1,42 @@
+[package]
+name = "vgate"
+version = "0.1.0"
+edition = "2021"
+description = "Vesper Gate: 초고속 Rust 기반 로컬 리버스 프록시, API 게이트웨이 & 안티 디도스 방패"
+
+[[bin]]
+name = "vgate"
+path = "src/main.rs"
+
+[dependencies]
+# CLI 명령어 파싱
+clap = { version = "4.4", features = ["derive", "cargo"] }
+
+# 비동기 런타임 및 네트워크
+tokio = { version = "1.38", features = ["full"] }
+hyper = { version = "1.4", features = ["full"] }
+hyper-util = { version = "0.1", features = ["full"] }
+http-body-util = "0.1"
+
+# 직렬화 및 설정 파일
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# 시스템 경로 및 컬러 터미널
+dirs = "5.0"
+colored = "2.1"
+anyhow = "1.0"
+thiserror = "1.0"
+bytes = "1.6"
+
+# 윈도우 네이티브 Win32 API
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Shell",
+    "Win32_System_Console",
+    "Win32_System_LibraryLoader",
+    "Win32_Graphics_Gdi"
+] }
