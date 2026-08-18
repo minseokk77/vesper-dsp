@@ -12,6 +12,7 @@ mod stats;
 mod tcp_proxy;
 mod tls;
 mod tray;
+mod acme;
 
 use clap::Parser;
 use colored::*;
@@ -253,6 +254,7 @@ async fn start_server(config: GatewayConfig) -> Result<(), Box<dyn std::error::E
     let stats_arc = Arc::new(GatewayStats::new());
     let stream_cache = Arc::new(crate::proxy::stream_booster::StreamBufferCache::new());
     let security_buffer = Arc::new(crate::proxy::security::SecurityLogBuffer::new());
+    let challenge_store = Arc::new(crate::acme::ChallengeStore::new());
 
     // 1. 마인크래프트 & 일반 TCP L4 포트 중계 매니저 구동
     let tcp_routes_lock = Arc::new(RwLock::new(config.tcp_routes.clone()));
@@ -264,7 +266,7 @@ async fn start_server(config: GatewayConfig) -> Result<(), Box<dyn std::error::E
     let _ = smart_dns.start().await;
 
     // 3. 로컬 HTTPS (포트 8443) 백그라운드 서버 가동
-    if let Ok(tls_acceptor) = crate::tls::load_or_generate_tls_config() {
+    if let Ok(tls_acceptor) = crate::tls::load_or_generate_tls_config(None) {
         let https_addr = format!("{}:{}", config.host, config.https_port);
         if let Ok(https_listener) = TcpListener::bind(&https_addr).await {
             println!("  • 로컬 HTTPS   : {}", format!("https://{}:{}", config.host, config.https_port).cyan().bold());
@@ -272,6 +274,7 @@ async fn start_server(config: GatewayConfig) -> Result<(), Box<dyn std::error::E
             let stats_https = Arc::clone(&stats_arc);
             let sc_https = Arc::clone(&stream_cache);
             let sec_https = Arc::clone(&security_buffer);
+            let cs_https = Arc::clone(&challenge_store);
 
             tokio::spawn(async move {
                 while let Ok((stream, remote_addr)) = https_listener.accept().await {
@@ -281,6 +284,7 @@ async fn start_server(config: GatewayConfig) -> Result<(), Box<dyn std::error::E
                     let stats_clone = Arc::clone(&stats_https);
                     let sc_clone = Arc::clone(&sc_https);
                     let sec_clone = Arc::clone(&sec_https);
+                    let cs_clone = Arc::clone(&cs_https);
 
                     tokio::spawn(async move {
                         if let Ok(tls_stream) = acceptor.accept(stream).await {
@@ -290,8 +294,9 @@ async fn start_server(config: GatewayConfig) -> Result<(), Box<dyn std::error::E
                                 let st = Arc::clone(&stats_clone);
                                 let sc = Arc::clone(&sc_clone);
                                 let sec = Arc::clone(&sec_clone);
+                                let cs = Arc::clone(&cs_clone);
                                 let ip = client_ip.clone();
-                                async move { handle_request(req, cfg, st, sc, sec, ip).await }
+                                async move { handle_request(req, cfg, st, sc, sec, cs, ip).await }
                             });
 
                             let _ = auto::Builder::new(hyper_util::rt::TokioExecutor::new())
@@ -312,6 +317,7 @@ async fn start_server(config: GatewayConfig) -> Result<(), Box<dyn std::error::E
         let stats_clone = Arc::clone(&stats_arc);
         let stream_cache_clone = Arc::clone(&stream_cache);
         let sec_clone = Arc::clone(&security_buffer);
+        let cs_clone = Arc::clone(&challenge_store);
 
         tokio::spawn(async move {
             let service = hyper::service::service_fn(move |req| {
@@ -319,8 +325,9 @@ async fn start_server(config: GatewayConfig) -> Result<(), Box<dyn std::error::E
                 let st = Arc::clone(&stats_clone);
                 let sc = Arc::clone(&stream_cache_clone);
                 let sec = Arc::clone(&sec_clone);
+                let cs = Arc::clone(&cs_clone);
                 let ip = client_ip.clone();
-                async move { handle_request(req, cfg, st, sc, sec, ip).await }
+                async move { handle_request(req, cfg, st, sc, sec, cs, ip).await }
             });
 
             if let Err(_err) = auto::Builder::new(hyper_util::rt::TokioExecutor::new())

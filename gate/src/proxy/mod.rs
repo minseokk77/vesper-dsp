@@ -20,6 +20,7 @@ use crate::proxy::mock::handle_mock_response;
 use crate::proxy::stream_booster::StreamBufferCache;
 use crate::proxy::security::{SecurityLogBuffer, inspect_threat};
 use crate::autostart::{enable_autostart, disable_autostart, is_autostart_enabled};
+use colored::*;
 
 const DASHBOARD_HTML: &str = include_str!("../ui/dashboard.html");
 
@@ -52,6 +53,14 @@ struct RemoveTcpRouteReq {
 }
 
 #[derive(Deserialize)]
+struct RequestSslReq {
+    domain: String,
+    email: String,
+    #[serde(default)]
+    staging: bool,
+}
+
+#[derive(Deserialize)]
 struct SettingsReq {
     enable_cors: Option<bool>,
     enable_cache: Option<bool>,
@@ -71,6 +80,7 @@ pub async fn handle_request(
     stats: Arc<GatewayStats>,
     stream_cache: Arc<StreamBufferCache>,
     security_buffer: Arc<SecurityLogBuffer>,
+    challenge_store: Arc<crate::acme::ChallengeStore>,
     client_ip: String,
 ) -> std::result::Result<Response<Full<Bytes>>, hyper::Error> {
     stats.record_request();
@@ -131,6 +141,19 @@ pub async fn handle_request(
         }
     }
 
+    // 0.5. ACME HTTP-01 챌린지 응답 (Let's Encrypt 정식 SSL 도메인 검증)
+    if path.starts_with("/.well-known/acme-challenge/") {
+        let token = path.trim_start_matches("/.well-known/acme-challenge/");
+        if let Some(key_auth) = challenge_store.get_token(token) {
+            println!("  • {} Let's Encrypt HTTP-01 챌린지 응답 전송: {}", "🔒 [ACME]".green().bold(), token);
+            return Ok(Response::builder()
+                .status(StatusCode::OK)
+                .header(CONTENT_TYPE, HeaderValue::from_static("text/plain; charset=utf-8"))
+                .body(Full::new(Bytes::from(key_auth)))
+                .unwrap());
+        }
+    }
+
     // 1. CORS Preflight (OPTIONS) 요청 가로채기
     {
         let cfg = config_lock.read().unwrap();
@@ -146,6 +169,60 @@ pub async fn handle_request(
             .status(StatusCode::OK)
             .header(CONTENT_TYPE, HeaderValue::from_static("text/html; charset=utf-8"))
             .body(Full::new(Bytes::from(DASHBOARD_HTML)))
+            .unwrap());
+    }
+
+    // 2.5. Let's Encrypt SSL 인증서 발급 & 상태 API (/pgate/api/ssl/...)
+    if path == "/pgate/api/ssl/request" && method == Method::POST {
+        let body_bytes = req.into_body().collect().await?.to_bytes();
+        let acme_mgr = crate::acme::AcmeManager::new((*challenge_store).clone());
+        if let Ok(data) = serde_json::from_slice::<RequestSslReq>(&body_bytes) {
+            match acme_mgr.request_certificate(&data.domain, &data.email, data.staging).await {
+                Ok(msg) => {
+                    return Ok(Response::builder()
+                        .status(StatusCode::OK)
+                        .header(CONTENT_TYPE, HeaderValue::from_static("application/json; charset=utf-8"))
+                        .body(Full::new(Bytes::from(serde_json::json!({ "status": "ok", "message": msg }).to_string())))
+                        .unwrap());
+                }
+                Err(e) => {
+                    return Ok(Response::builder()
+                        .status(StatusCode::INTERNAL_SERVER_ERROR)
+                        .header(CONTENT_TYPE, HeaderValue::from_static("application/json; charset=utf-8"))
+                        .body(Full::new(Bytes::from(serde_json::json!({ "status": "error", "message": e.to_string() }).to_string())))
+                        .unwrap());
+                }
+            }
+        } else {
+            return Ok(Response::builder()
+                .status(StatusCode::BAD_REQUEST)
+                .header(CONTENT_TYPE, HeaderValue::from_static("application/json; charset=utf-8"))
+                .body(Full::new(Bytes::from("{\"status\":\"bad_request\"}")))
+                .unwrap());
+        }
+    }
+
+    if path == "/pgate/api/ssl/status" && method == Method::GET {
+        let acme_mgr = crate::acme::AcmeManager::new((*challenge_store).clone());
+        let certs_dir = acme_mgr.get_certs_dir();
+        let mut cert_list = Vec::new();
+        if let Ok(entries) = std::fs::read_dir(certs_dir) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if p.extension().and_then(|s| s.to_str()) == Some("crt") {
+                    let domain = p.file_stem().and_then(|s| s.to_str()).unwrap_or("").to_string();
+                    cert_list.push(serde_json::json!({
+                        "domain": domain,
+                        "file": p.to_string_lossy(),
+                        "valid": true
+                    }));
+                }
+            }
+        }
+        return Ok(Response::builder()
+            .status(StatusCode::OK)
+            .header(CONTENT_TYPE, HeaderValue::from_static("application/json; charset=utf-8"))
+            .body(Full::new(Bytes::from(serde_json::json!({ "certs": cert_list }).to_string())))
             .unwrap());
     }
 
