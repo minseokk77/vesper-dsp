@@ -101,6 +101,7 @@
     isInstallingApo = true;
     try {
       await invoke('install_apo_elevated', { deviceName: output });
+      await new Promise(r => setTimeout(r, 1200));
       await checkApo();
     } catch (e) {
       console.error(e);

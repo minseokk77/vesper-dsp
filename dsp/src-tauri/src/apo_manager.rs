@@ -5,6 +5,9 @@ use windows::Win32::Foundation::{HANDLE, INVALID_HANDLE_VALUE};
 use windows::Win32::System::Memory::{
     CreateFileMappingW, MapViewOfFile, FILE_MAP_ALL_ACCESS, PAGE_READWRITE,
 };
+use std::os::windows::process::CommandExt;
+
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 pub const SHARED_MEMORY_NAME: &str = "Global\\VesperDspApoSharedMemory";
 pub const MAX_EQ_BANDS: usize = 32;
@@ -121,15 +124,18 @@ pub fn check_device_apo_installed(device_name: &str) -> bool {
     let ps_script = format!(
         r#"
 $targetName = "{device_name}"
+$innerName = if ($targetName -match '\(([^)]+)\)') {{ $matches[1].Trim() }} else {{ $targetName.Trim() }}
 $clsid = "{CLSID_VESPER_APO_STR}"
 $endpoints = Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render" -ErrorAction SilentlyContinue
 
 foreach ($ep in $endpoints) {{
     $props = Get-ItemProperty "$($ep.PSPath)\Properties" -ErrorAction SilentlyContinue
     if ($props) {{
-        $name1 = $props.'{{a45c254e-df1c-4efd-8020-67d146a850e0}},2'
-        $name2 = $props.'{{b3f8fa53-0004-438e-9003-51a46e139bfc}},6'
-        if (($name1 -and $name1 -like "*$targetName*") -or ($name2 -and $name2 -like "*$targetName*") -or ($targetName -like "*$name1*")) {{
+        $n1 = [string]$props.'{{a45c254e-df1c-4efd-8020-67d146a850e0}},2'
+        $n2 = [string]$props.'{{b3f8fa53-0004-438e-9003-51a46e139bfc}},6'
+        $combined = "$n1 $n2".Trim()
+        
+        if (($combined -like "*$innerName*") -or ($innerName -like "*$n2*")) {{
             $fx = Get-ItemProperty "$($ep.PSPath)\FxProperties" -ErrorAction SilentlyContinue
             if ($fx -and $fx.'{{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D}},7' -eq $clsid) {{
                 Write-Output "INSTALLED"
@@ -143,7 +149,8 @@ Write-Output "NOT_INSTALLED"
     );
 
     let output = std::process::Command::new("powershell")
-        .args(["-NoProfile", "-NonInteractive", "-Command", &ps_script])
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", &ps_script])
         .output();
 
     if let Ok(out) = output {
@@ -166,122 +173,49 @@ pub fn install_device_apo_elevated(device_name: &str) -> Result<String, String> 
 
     let script_content = format!(
         r#"
-# 1. SeTakeOwnership & SeRestore P/Invoke 헬퍼 컴파일
-`$definition = @"
-using System;
-using System.Runtime.InteropServices;
-using System.Security.Principal;
+$targetName = "{device_name}"
+$innerName = if ($targetName -match '\(([^)]+)\)') {{ $matches[1].Trim() }} else {{ $targetName.Trim() }}
+$dllPath = "{dll_path_str}"
+$clsid = "{CLSID_VESPER_APO_STR}"
 
-public class RegSecurityHelper {{
-    [DllImport("advapi32.dll", SetLastError = true)]
-    public static extern bool OpenProcessToken(IntPtr ProcessHandle, uint DesiredAccess, out IntPtr TokenHandle);
+# 1. COM CLSID 등록 (HKLM 및 HKCU)
+& reg.exe add "HKLM\SOFTWARE\Classes\CLSID\$clsid" /ve /d "Vesper BioPhys APO" /f
+& reg.exe add "HKLM\SOFTWARE\Classes\CLSID\$clsid\InprocServer32" /ve /d "$dllPath" /f
+& reg.exe add "HKLM\SOFTWARE\Classes\CLSID\$clsid\InprocServer32" /v "ThreadingModel" /d "Both" /f
 
-    [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-    public static extern bool LookupPrivilegeValue(string lpSystemName, string lpName, out long lpLuid);
+& reg.exe add "HKCU\Software\Classes\CLSID\$clsid" /ve /d "Vesper BioPhys APO" /f
+& reg.exe add "HKCU\Software\Classes\CLSID\$clsid\InprocServer32" /ve /d "$dllPath" /f
+& reg.exe add "HKCU\Software\Classes\CLSID\$clsid\InprocServer32" /v "ThreadingModel" /d "Both" /f
 
-    [DllImport("advapi32.dll", SetLastError = true)]
-    public static extern bool AdjustTokenPrivileges(IntPtr TokenHandle, bool DisableAllPrivileges, ref TOKEN_PRIVILEGES NewState, uint BufferLength, IntPtr PreviousState, IntPtr ReturnLength);
-
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct TOKEN_PRIVILEGES {{
-        public uint PrivilegeCount;
-        public long Luid;
-        public uint Attributes;
-    }}
-
-    public const uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
-    public const uint TOKEN_QUERY = 0x0008;
-    public const uint SE_PRIVILEGE_ENABLED = 0x00000002;
-    public const string SE_TAKE_OWNERSHIP_NAME = "SeTakeOwnershipPrivilege";
-    public const string SE_RESTORE_NAME = "SeRestorePrivilege";
-
-    public static bool EnablePrivileges() {{
-        IntPtr hToken;
-        if (!OpenProcessToken(System.Diagnostics.Process.GetCurrentProcess().Handle, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, out hToken)) {{
-            return false;
-        }}
-
-        long luid;
-        if (LookupPrivilegeValue(null, SE_TAKE_OWNERSHIP_NAME, out luid)) {{
-            TOKEN_PRIVILEGES tp = new TOKEN_PRIVILEGES {{ PrivilegeCount = 1, Luid = luid, Attributes = SE_PRIVILEGE_ENABLED }};
-            AdjustTokenPrivileges(hToken, false, ref tp, 0, IntPtr.Zero, IntPtr.Zero);
-        }}
-
-        if (LookupPrivilegeValue(null, SE_RESTORE_NAME, out luid)) {{
-            TOKEN_PRIVILEGES tp = new TOKEN_PRIVILEGES {{ PrivilegeCount = 1, Luid = luid, Attributes = SE_PRIVILEGE_ENABLED }};
-            AdjustTokenPrivileges(hToken, false, ref tp, 0, IntPtr.Zero, IntPtr.Zero);
-        }}
-
-        return true;
-    }}
-}}
-"@
-
-Add-Type -TypeDefinition `$definition
-[RegSecurityHelper]::EnablePrivileges() | Out-Null
-
-function Grant-RegAccess([string]`$subPath) {{
-    try {{
-        `$regKey = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey(`$subPath, [Microsoft.Win32.RegistryKeyPermissionCheck]::ReadWriteSubTree, [System.Security.AccessControl.RegistryRights]::TakeOwnership)
-        if (`$regKey) {{
-            `$acl = `$regKey.GetAccessControl()
-            `$admin = New-Object System.Security.Principal.NTAccount("Administrators")
-            `$acl.SetOwner(`$admin)
-            `$regKey.SetAccessControl(`$acl)
-            `$regKey.Close()
-        }}
-
-        `$regKey = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey(`$subPath, [Microsoft.Win32.RegistryKeyPermissionCheck]::ReadWriteSubTree, [System.Security.AccessControl.RegistryRights]::ChangePermissions)
-        if (`$regKey) {{
-            `$acl = `$regKey.GetAccessControl()
-            `$rule = New-Object System.Security.AccessControl.RegistryAccessRule("Administrators", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
-            `$acl.SetAccessRule(`$rule)
-            `$regKey.SetAccessControl(`$acl)
-            `$regKey.Close()
-        }}
-    }} catch {{}}
-}}
-
-`$targetName = "{device_name}"
-`$dllPath = "{dll_path_str}"
-`$clsid = "{CLSID_VESPER_APO_STR}"
-
-# 2. COM CLSID 등록 (HKLM 및 HKCU)
-`$clsidPaths = @(
-    "HKLM:\SOFTWARE\Classes\CLSID\`$clsid",
-    "HKCU:\Software\Classes\CLSID\`$clsid"
-)
-foreach (`$cp in `$clsidPaths) {{
-    if (!(Test-Path `$cp)) {{ New-Item -Path `$cp -Force -ErrorAction SilentlyContinue | Out-Null }}
-    Set-ItemProperty -Path `$cp -Name "(Default)" -Value "Vesper BioPhys APO" -ErrorAction SilentlyContinue
-    `$inproc = "`$cp\InprocServer32"
-    if (!(Test-Path `$inproc)) {{ New-Item -Path `$inproc -Force -ErrorAction SilentlyContinue | Out-Null }}
-    Set-ItemProperty -Path `$inproc -Name "(Default)" -Value `$dllPath -ErrorAction SilentlyContinue
-    Set-ItemProperty -Path `$inproc -Name "ThreadingModel" -Value "Both" -ErrorAction SilentlyContinue
-}}
-
-# 3. MMDevices Endpoint 검색 및 소유권 획득 후 FxProperties 등록
-`$endpoints = Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render" -ErrorAction SilentlyContinue
-foreach (`$ep in `$endpoints) {{
-    `$props = Get-ItemProperty "`$(`$ep.PSPath)\Properties" -ErrorAction SilentlyContinue
-    if (`$props) {{
-        `$name1 = `$props.'{{a45c254e-df1c-4efd-8020-67d146a850e0}},2'
-        `$name2 = `$props.'{{b3f8fa53-0004-438e-9003-51a46e139bfc}},6'
-        if ((`$name1 -and `$name1 -like "*`$targetName*") -or (`$name2 -and `$name2 -like "*`$targetName*") -or (`$targetName -like "*`$name1*")) {{
-            `$guid = `$ep.PSChildName
-            `$relPath = "SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render\`$guid\FxProperties"
-            Grant-RegAccess `$relPath
+# 2. MMDevices Endpoint 검색 및 소유권 획득 후 FxProperties 등록
+$endpoints = Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render" -ErrorAction SilentlyContinue
+foreach ($ep in $endpoints) {{
+    $props = Get-ItemProperty "$($ep.PSPath)\Properties" -ErrorAction SilentlyContinue
+    if ($props) {{
+        $n1 = [string]$props.'{{a45c254e-df1c-4efd-8020-67d146a850e0}},2'
+        $n2 = [string]$props.'{{b3f8fa53-0004-438e-9003-51a46e139bfc}},6'
+        $combined = "$n1 $n2".Trim()
+        
+        if (($combined -like "*$innerName*") -or ($innerName -like "*$n2*")) {{
+            $guid = $ep.PSChildName
             
-            & reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render\`$guid\FxProperties" /v "{{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D}},5" /d `$clsid /f
-            & reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render\`$guid\FxProperties" /v "{{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D}},6" /d `$clsid /f
-            & reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render\`$guid\FxProperties" /v "{{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D}},7" /d `$clsid /f
+            # ACL 권한 부여 (regini)
+            $iniPath = "$env:TEMP\vesper_reg_$guid.ini"
+            "\Registry\Machine\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render\$guid\FxProperties [1 7 17]" | Set-Content -Path $iniPath -Encoding ASCII
+            & regini.exe $iniPath
+            Remove-Item -Path $iniPath -Force -ErrorAction SilentlyContinue
+            
+            # FxProperties 등록
+            & reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render\$guid\FxProperties" /v "{{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D}},5" /d "$clsid" /f
+            & reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render\$guid\FxProperties" /v "{{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D}},6" /d "$clsid" /f
+            & reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render\$guid\FxProperties" /v "{{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D}},7" /d "$clsid" /f
         }}
     }}
 }}
 
-# 4. 윈도우 오디오 엔진 재시작
-net stop audiosrv /y
-net start audiosrv
+# 3. 윈도우 오디오 엔진 재시작
+& net.exe stop audiosrv /y
+& net.exe start audiosrv
 "#
     );
 
@@ -289,12 +223,13 @@ net start audiosrv
     std::fs::write(&temp_file, script_content).map_err(|e| format!("Failed to write temp script: {e}"))?;
 
     let ps_cmd = format!(
-        "Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \"{}\"' -Verb RunAs -Wait",
+        "Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{}\"' -Verb RunAs -WindowStyle Hidden -Wait",
         temp_file.to_str().unwrap().replace('/', "\\")
     );
 
     let _ = std::process::Command::new("powershell")
-        .args(["-NoProfile", "-NonInteractive", "-Command", &ps_cmd])
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", &ps_cmd])
         .output();
 
     let _ = std::fs::remove_file(temp_file);
