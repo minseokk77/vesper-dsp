@@ -1,0 +1,11 @@
+﻿{
+  "version": "0.0.28",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVi9TK3c4b1Vyb3FSQms2OFJJUFJURktCNGQ3cG9ha3pGRFgvTFVzeWRpWEE4L3oyMzE1WmJaL2xSTjliUTEvdWd2OE5najlOZGRFU2Y2U2Nmb1JzY0taY1ZVZG00eEFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4MTcyNDI0CWZpbGU6VmVzcGVyRFNQXzAuMC4yOF94NjQtc2V0dXAuZXhlCkkvUmZLV3duL3doUHFISnJVcWdxNms1a2xmQ2p1cnk1SWJuTXkrMjdQYk1TdWdDb0wxUmd4dUFWeTlhUklTT2cwZWpWQWhWOVd1T1VMMWpnV0lKQ0RRPT0K",
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.28/VesperDSP_0.0.28_x64-setup.exe"
+    }
+  },
+  "notes": "v0.0.28: WPO (Windows Processing Object) 24-bit 48kHz Source Ingest & Signal Path Refresh\n- WPO 오디오 소스 24-bit / 48kHz 호환성 완벽 연동\n- Signal Path UI 불필요 문구 정리 및 포맷 디테일 최적화",
+  "pub_date": "2026-08-31T10:30:00Z"
+}
