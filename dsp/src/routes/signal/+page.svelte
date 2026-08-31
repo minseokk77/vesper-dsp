@@ -162,8 +162,8 @@
         <div class="w-7 h-7 rounded-full bg-black flex items-center justify-center border border-white/20 z-10 shadow-lg shadow-white/5 shrink-0 text-[8px] font-bold">SRC</div>
         <div class="flex flex-col pt-1">
           <span class="text-sm font-bold text-white/90 flex items-center gap-2">오디오 소스 <span class="text-apple-blue">✨</span></span>
-          <span class="text-[11px] text-apple-blue font-medium mt-1">{formatDeviceName(selectedSource)}</span>
-          <span class="text-[10px] text-white/40 mt-1">입력: {sourceSampleRate / 1000}kHz {sourceBitDepth === 'F32' ? '32bit Float (OS 믹서)' : sourceBitDepth} {sourceChannels}ch</span>
+          <span class="text-[11px] text-apple-blue font-medium mt-1">Windows System Audio (순정 윈도우 사운드)</span>
+          <span class="text-[10px] text-white/40 mt-1">Direct In-Place Buffer (가상 케이블 불필요) · {sourceSampleRate / 1000}kHz {sourceChannels}ch</span>
         </div>
       </div>
 

@@ -153,8 +153,8 @@
     const savedOutput = localStorage.getItem('vesper_dsp_output') || '';
     if (savedSource && !sourceDevices.includes(savedSource)) sourceDevices = [...sourceDevices, savedSource];
     if (savedOutput && !outputDevices.includes(savedOutput)) outputDevices = [...outputDevices, savedOutput];
-    source = savedSource || (sourceDevices.find(d => d.toLowerCase().includes('cable input') || d.toLowerCase().includes('cable')) || sourceDevices[0] || '');
-    output = savedOutput || (outputDevices.find(d => !d.toLowerCase().includes('cable')) || outputDevices[0] || '');
+    source = savedSource || output || (sourceDevices[0] || '');
+    output = savedOutput || (outputDevices[0] || '');
   }
 
   async function toggleDsp() {
@@ -709,6 +709,7 @@
 
   $: if (settingsRestored && output) {
     applySavedAutoEqForOutput(output);
+    invoke('auto_bind_device', { deviceName: output }).catch(console.error);
   }
 </script>
 
@@ -750,11 +751,10 @@
         
         <div class="flex flex-col gap-3.5">
           <div class="w-full flex flex-col gap-1.5 relative group">
-            <span class="text-[10px] font-semibold tracking-widest text-white/50 uppercase pl-1">Input Source</span>
-            <CustomSelect bind:value={source} options={sourceDevices.map(d => ({ value: d, label: d }))} bind:isOpen={sourceMenuOpen} />
-          </div>
-          <div class="w-full flex flex-col gap-1.5 relative group">
-            <span class="text-[10px] font-semibold tracking-widest text-white/50 uppercase pl-1">Output Device</span>
+            <div class="flex items-center justify-between pl-1">
+              <span class="text-[10px] font-semibold tracking-widest text-white/50 uppercase">Output Device (재생 장치)</span>
+              <span class="text-[9px] font-medium text-[#0A84FF] tracking-wider uppercase">Direct APO In-Place</span>
+            </div>
             <CustomSelect bind:value={output} options={outputDevices.map(d => ({ value: d, label: d }))} bind:isOpen={outputMenuOpen} />
           </div>
         </div>

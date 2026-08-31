@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod audio_engine;
+mod apo_manager;
 
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::{Emitter, Manager};
@@ -78,7 +79,18 @@ fn set_mute(muted: bool) {
 
 #[tauri::command]
 fn apply_output_eq_profile(profile: audio_engine::EqProfile) {
+    apo_manager::sync_apo_eq_profile(profile.enabled, profile.preamp_gain as f32, &profile.bands);
     audio_engine::update_output_eq_profile(profile);
+}
+
+#[tauri::command]
+fn is_apo_active() -> bool {
+    apo_manager::is_apo_active()
+}
+
+#[tauri::command]
+fn auto_bind_device(device_name: String) -> Result<String, String> {
+    apo_manager::auto_bind_device_apo(&device_name)
 }
 
 #[tauri::command]
@@ -229,6 +241,8 @@ fn main() {
             get_stream_info,
             get_engine_status,
             get_factory_presets,
+            is_apo_active,
+            auto_bind_device,
             blink_tray_icon
         ])
         .run(tauri::generate_context!())
