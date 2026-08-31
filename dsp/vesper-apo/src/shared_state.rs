@@ -27,6 +27,7 @@ impl Default for ApoEqBand {
 #[repr(C)]
 pub struct VesperApoSharedState {
     pub is_enabled: AtomicBool,
+    pub is_muted: AtomicBool,
     pub preamp_gain_db: f32,
     pub band_count: u32,
     pub bands: [ApoEqBand; MAX_EQ_BANDS],
@@ -37,6 +38,7 @@ impl Default for VesperApoSharedState {
     fn default() -> Self {
         Self {
             is_enabled: AtomicBool::new(true),
+            is_muted: AtomicBool::new(false),
             preamp_gain_db: 0.0,
             band_count: 0,
             bands: [ApoEqBand::default(); MAX_EQ_BANDS],

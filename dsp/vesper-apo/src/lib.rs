@@ -59,6 +59,13 @@ pub unsafe extern "C" fn VesperApoProcessBuffer(
 
     if let Some(shared_ptr) = &*SHARED_MEMORY_PTR {
         let state = &*(shared_ptr.0 as *const VesperApoSharedState);
+        
+        // 🔇 [하드웨어 DAC 무시 음소거 원천 해결: APO 레벨에서 버퍼 0 완전 초기화]
+        if state.is_muted.load(std::sync::atomic::Ordering::Relaxed) {
+            std::ptr::write_bytes(buffer, 0, sample_count);
+            return;
+        }
+
         if !state.is_enabled.load(std::sync::atomic::Ordering::Relaxed) {
             return;
         }

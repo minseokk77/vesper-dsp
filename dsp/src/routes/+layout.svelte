@@ -28,6 +28,6 @@
   });
 </script>
 
-<div class="h-screen w-screen bg-transparent overflow-hidden">
+<div class="h-screen w-screen bg-[#0c0c0e] overflow-hidden">
   <slot />
 </div>

@@ -14,6 +14,8 @@ use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::Emitter;
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 
 static IS_RUNNING: Lazy<Arc<AtomicBool>> = Lazy::new(|| Arc::new(AtomicBool::new(false)));
 static LAST_CLIP_TIME: Lazy<AtomicI64> = Lazy::new(|| AtomicI64::new(0));
@@ -476,6 +478,238 @@ pub fn get_device_supported_sample_rates(
 
 pub fn set_output_mute(muted: bool) {
     OUTPUT_MUTED.store(muted, Ordering::SeqCst);
+    set_system_mute(muted);
+}
+
+#[cfg(windows)]
+pub fn set_system_mute(muted: bool) {
+    unsafe {
+        use windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume;
+        use windows::Win32::Media::Audio::{
+            eConsole, eRender, IMMDeviceEnumerator, MMDeviceEnumerator,
+            IAudioSessionManager2, ISimpleAudioVolume,
+        };
+        use windows::Win32::System::Com::{
+            CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED,
+        };
+        use windows::core::Interface;
+
+        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+        if let Ok(enumerator) = CoCreateInstance::<_, IMMDeviceEnumerator>(
+            &MMDeviceEnumerator,
+            None,
+            CLSCTX_ALL,
+        ) {
+            if let Ok(device) = enumerator.GetDefaultAudioEndpoint(eRender, eConsole) {
+                // 1. 엔드포인트 레벨 음소거
+                if let Ok(endpoint_volume) = device.Activate::<IAudioEndpointVolume>(CLSCTX_ALL, None) {
+                    let _ = endpoint_volume.SetMute(muted, std::ptr::null());
+                }
+
+                // 2. 🔇 [FiiO USB DAC 하드웨어 무시 음소거 원천 해결: 모든 활성 앱 오디오 세션 전수 소프트웨어 음소거]
+                if let Ok(session_mgr) = device.Activate::<IAudioSessionManager2>(CLSCTX_ALL, None) {
+                    if let Ok(session_enum) = session_mgr.GetSessionEnumerator() {
+                        if let Ok(count) = session_enum.GetCount() {
+                            for i in 0..count {
+                                if let Ok(session_ctrl) = session_enum.GetSession(i) {
+                                    if let Ok(simple_vol) = session_ctrl.cast::<ISimpleAudioVolume>() {
+                                        let _ = simple_vol.SetMute(muted, std::ptr::null());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[cfg(not(windows))]
+pub fn set_system_mute(_muted: bool) {}
+
+#[cfg(windows)]
+pub fn get_system_mute() -> bool {
+    unsafe {
+        use windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume;
+        use windows::Win32::Media::Audio::{
+            eConsole, eRender, IMMDeviceEnumerator, MMDeviceEnumerator,
+        };
+        use windows::Win32::System::Com::{
+            CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED,
+        };
+
+        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+        if let Ok(enumerator) = CoCreateInstance::<_, IMMDeviceEnumerator>(
+            &MMDeviceEnumerator,
+            None,
+            CLSCTX_ALL,
+        ) {
+            if let Ok(device) = enumerator.GetDefaultAudioEndpoint(eRender, eConsole) {
+                if let Ok(endpoint_volume) = device.Activate::<IAudioEndpointVolume>(CLSCTX_ALL, None) {
+                    if let Ok(is_muted) = endpoint_volume.GetMute() {
+                        return is_muted.as_bool();
+                    }
+                }
+            }
+        }
+    }
+    OUTPUT_MUTED.load(Ordering::Relaxed)
+}
+
+#[cfg(windows)]
+pub fn start_windows_volume_sync_daemon() {
+    std::thread::Builder::new()
+        .name("vesper_win_vol_sync".to_string())
+        .spawn(|| {
+            unsafe {
+                use windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume;
+                use windows::Win32::Media::Audio::{
+                    eConsole, eRender, IMMDeviceEnumerator, MMDeviceEnumerator,
+                    IAudioSessionManager2, ISimpleAudioVolume,
+                };
+                use windows::Win32::System::Com::{
+                    CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED,
+                };
+                use windows::core::Interface;
+
+                let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+                let mut last_vol: f32 = -1.0;
+                let mut last_mute: bool = false;
+
+                loop {
+                    std::thread::sleep(std::time::Duration::from_millis(20)); // 50 FPS 초저지연 실시간 동기화
+
+                    if let Ok(enumerator) = CoCreateInstance::<_, IMMDeviceEnumerator>(
+                        &MMDeviceEnumerator,
+                        None,
+                        CLSCTX_ALL,
+                    ) {
+                        if let Ok(device) = enumerator.GetDefaultAudioEndpoint(eRender, eConsole) {
+                            if let Ok(endpoint_volume) = device.Activate::<IAudioEndpointVolume>(CLSCTX_ALL, None) {
+                                let mut current_vol = 1.0f32;
+                                let mut current_mute = false;
+
+                                if let Ok(vol) = endpoint_volume.GetMasterVolumeLevelScalar() {
+                                    current_vol = vol;
+                                }
+                                if let Ok(mute) = endpoint_volume.GetMute() {
+                                    current_mute = mute.as_bool();
+                                }
+
+                                if (current_vol - last_vol).abs() > 0.005 || current_mute != last_mute {
+                                    last_vol = current_vol;
+                                    last_mute = current_mute;
+
+                                    if let Ok(session_mgr) = device.Activate::<IAudioSessionManager2>(CLSCTX_ALL, None) {
+                                        if let Ok(session_enum) = session_mgr.GetSessionEnumerator() {
+                                            if let Ok(count) = session_enum.GetCount() {
+                                                for i in 0..count {
+                                                    if let Ok(session_ctrl) = session_enum.GetSession(i) {
+                                                        if let Ok(simple_vol) = session_ctrl.cast::<ISimpleAudioVolume>() {
+                                                            let _ = simple_vol.SetMasterVolume(current_vol, std::ptr::null());
+                                                            let _ = simple_vol.SetMute(current_mute, std::ptr::null());
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+        .ok();
+}
+
+#[cfg(not(windows))]
+pub fn start_windows_volume_sync_daemon() {}
+
+#[cfg(windows)]
+pub fn set_windows_default_playback_device(device_name: &str) -> Result<(), String> {
+    let script = format!(
+        r#"
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+[ComImport]
+[Guid("870af99c-171d-4f9e-af0d-e63df40c2bc9")]
+public class PolicyConfigClient {{}}
+[Guid("f8679f50-850a-41cf-9c72-430f290290c8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+public interface IPolicyConfig {{
+    [PreserveSig] int GetMixFormat();
+    [PreserveSig] int GetDeviceFormat();
+    [PreserveSig] int ResetDeviceFormat();
+    [PreserveSig] int SetDeviceFormat();
+    [PreserveSig] int GetProcessingPeriod();
+    [PreserveSig] int SetProcessingPeriod();
+    [PreserveSig] int GetShareMode();
+    [PreserveSig] int SetShareMode();
+    [PreserveSig] int GetPropertyValue();
+    [PreserveSig] int SetPropertyValue();
+    [PreserveSig] int SetDefaultEndpoint([MarshalAs(UnmanagedType.LPWStr)] string wszDeviceId, int role);
+    [PreserveSig] int SetEndpointVisibility();
+}}
+public class AudioSwitcher {{
+    public static int SetDefault(string deviceId) {{
+        try {{
+            IPolicyConfig policyConfig = (IPolicyConfig)new PolicyConfigClient();
+            int hr1 = policyConfig.SetDefaultEndpoint(deviceId, 0);
+            int hr2 = policyConfig.SetDefaultEndpoint(deviceId, 1);
+            int hr3 = policyConfig.SetDefaultEndpoint(deviceId, 2);
+            return (hr1 == 0 && hr2 == 0 && hr3 == 0) ? 0 : 1;
+        }} catch {{ return -1; }}
+    }}
+}}
+"@
+$targetName = "{device_name}"
+$endpoints = Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render" -ErrorAction SilentlyContinue
+foreach ($ep in $endpoints) {{
+    $p = Get-ItemProperty "$($ep.PSPath)\Properties" -ErrorAction SilentlyContinue
+    if ($p) {{
+        $n1 = [string]$p.'{{a45c254e-df1c-4efd-8020-67d146a850e0}},2'
+        $n2 = [string]$p.'{{b3f8fa53-0004-438e-9003-51a46e139bfc}},6'
+        $full1 = "$n1 ($n2)"
+        $full2 = "$n2 ($n1)"
+        
+        $isMatch = $false
+        if ($targetName -eq $full1 -or $targetName -eq $full2 -or $targetName -eq $n2) {{
+            $isMatch = $true
+        }} elseif ($n2.Length -ge 3 -and ($targetName.IndexOf($n2, [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -or $n2.IndexOf($targetName, [System.StringComparison]::OrdinalIgnoreCase) -ge 0)) {{
+            $isMatch = $true
+        }} elseif ($n1.Length -ge 6 -and ($targetName.IndexOf($n1, [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -or $n1.IndexOf($targetName, [System.StringComparison]::OrdinalIgnoreCase) -ge 0)) {{
+            $isMatch = $true
+        }}
+        
+        if ($isMatch) {{
+            $devId = "{{0.0.0.00000000}}.$($ep.PSChildName)"
+            [AudioSwitcher]::SetDefault($devId) | Out-Null
+            break
+        }}
+    }}
+}}
+"#
+    );
+
+    let _ = std::process::Command::new("powershell")
+        .creation_flags(0x08000000)
+        .args(["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", &script])
+        .output();
+
+    Ok(())
+}
+
+#[cfg(not(windows))]
+pub fn set_windows_default_playback_device(_device_name: &str) -> Result<(), String> {
+    Ok(())
+}
+
+#[cfg(not(windows))]
+pub fn get_system_mute() -> bool {
+    OUTPUT_MUTED.load(Ordering::Relaxed)
 }
 
 pub fn update_output_eq_profile(profile: EqProfile) {
@@ -722,6 +956,10 @@ pub fn start_dsp_engine(
             }
             let mut preamp_gain = 10_f64.powf(profile.preamp_gain / 20.0);
             let mut is_eq_enabled = profile.enabled;
+            let fade_in_samples: usize = (output_rate as usize * output_channels / 20).max(1); // 50ms 부드러운 페이드인
+            let total_fade_samples = fade_in_samples as f64;
+            let mut current_fade_sample = 0usize;
+
             output_device
                 .build_output_stream(
                     output_config.clone().into(),
@@ -764,6 +1002,14 @@ pub fn start_dsp_engine(
                             }
                         }
 
+                        let muted = OUTPUT_MUTED.load(Ordering::Relaxed);
+                        if muted {
+                            for target in data.iter_mut() {
+                                *target = Sample::EQUILIBRIUM;
+                            }
+                            return;
+                        }
+
                         let mut underruns = 0_u64;
                         let mut clipped = false;
                         for target in data {
@@ -774,6 +1020,13 @@ pub fn start_dsp_engine(
                                     0.0
                                 }
                             };
+
+                            // 🛡️ [앱 켜질 때 소리 폭주/팝노이즈 원천 차단: 50ms 소프트 페이드인]
+                            if current_fade_sample < fade_in_samples {
+                                let ramp = (std::f64::consts::PI * 0.5 * (current_fade_sample as f64 / total_fade_samples)).sin();
+                                sample *= ramp;
+                                current_fade_sample += 1;
+                            }
                             if is_eq_enabled {
                                 sample *= preamp_gain;
                                 let filters = if channel % 2 == 0 {
@@ -897,14 +1150,22 @@ pub fn start_dsp_engine(
     }
     let _ = app_handle.emit("dsp-stream-info", ());
 
+    // 🛡️ [기본 음성 우회 방지: Source 장치가 가상 케이블인 경우 Windows 기본 재생 장치로 강제 고정]
+    if is_virtual_cable_device(source_name) {
+        let _ = set_windows_default_playback_device(source_name);
+    }
+
     println!("Vesper DSP active: {input_rate}Hz input -> {output_rate}Hz output");
     Ok(())
 }
 
-pub fn stop_dsp_engine() -> Result<(), String> {
+pub fn stop_dsp_engine(output_name: Option<&str>) -> Result<(), String> {
     let _transition = ENGINE_TRANSITION
         .lock()
         .map_err(|_| "Audio engine transition lock poisoned")?;
+    if let Some(out_dev) = output_name {
+        let _ = set_windows_default_playback_device(out_dev);
+    }
     stop_dsp_engine_inner()
 }
 

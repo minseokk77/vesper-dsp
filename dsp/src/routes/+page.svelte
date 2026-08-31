@@ -101,8 +101,11 @@
     isInstallingApo = true;
     try {
       await invoke('install_apo_elevated', { deviceName: output });
-      await new Promise(r => setTimeout(r, 1200));
-      await checkApo();
+      for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 500));
+        await checkApo();
+        if (isApoInstalled) break;
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -191,7 +194,7 @@
     }
     if (isStarting) return;
     if (isRunning) {
-      await invoke('stop_dsp');
+      await invoke('stop_dsp', { output });
       isRunning = false;
       localStorage.setItem('vesper_dsp_is_running', 'false');
     } else {
@@ -558,6 +561,9 @@
   onMount(async () => {
     await fetchDevices();
     currentVersion = await getVersion();
+    try {
+      isMuted = await invoke<boolean>('get_mute');
+    } catch {}
 
     if (isWindowLocked) {
       lockedWindowPosition = loadLockedWindowPosition();

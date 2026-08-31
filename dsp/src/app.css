@@ -58,7 +58,7 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
-  background-color: transparent;
+  background-color: #0c0c0e;
   color: var(--color-text-primary);
   @apply antialiased overflow-hidden select-none flex items-center justify-center min-h-screen;
 }

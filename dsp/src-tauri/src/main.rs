@@ -68,13 +68,24 @@ fn start_dsp(
 }
 
 #[tauri::command]
-fn stop_dsp() -> Result<String, String> {
-    audio_engine::stop_dsp_engine().map(|_| "DSP stopped".to_string())
+fn stop_dsp(output: Option<String>) -> Result<String, String> {
+    audio_engine::stop_dsp_engine(output.as_deref()).map(|_| "DSP stopped".to_string())
+}
+
+#[tauri::command]
+fn set_default_device(device_name: String) -> Result<(), String> {
+    audio_engine::set_windows_default_playback_device(&device_name)
 }
 
 #[tauri::command]
 fn set_mute(muted: bool) {
     audio_engine::set_output_mute(muted);
+    apo_manager::sync_apo_mute(muted);
+}
+
+#[tauri::command]
+fn get_mute() -> bool {
+    audio_engine::get_system_mute()
 }
 
 #[tauri::command]
@@ -139,15 +150,63 @@ fn blink_tray_icon(app: tauri::AppHandle) -> Result<(), String> {
 
 // Rust-side window spawn removed in favor of JS frontend spawn to prevent thread deadlocks.
 
+fn show_or_create_main_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.center();
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    } else {
+        let _ = tauri::WebviewWindowBuilder::new(
+            app,
+            "main",
+            tauri::WebviewUrl::App("index.html".into()),
+        )
+        .title("Vesper DSP")
+        .inner_size(360.0, 800.0)
+        .resizable(false)
+        .decorations(false)
+        .transparent(false)
+        .center()
+        .build();
+    }
+}
+
 fn main() {
+    #[cfg(windows)]
+    let _mutex = unsafe {
+        use windows::core::w;
+        use windows::Win32::Foundation::{GetLastError, ERROR_ALREADY_EXISTS};
+        use windows::Win32::System::Threading::CreateMutexW;
+        use windows::Win32::UI::WindowsAndMessaging::{
+            FindWindowW, SetForegroundWindow, ShowWindow, SW_RESTORE,
+        };
+
+        let mutex = CreateMutexW(None, true, w!("Global\\VesperDspSingleInstanceNativeMutex"));
+        if GetLastError() == ERROR_ALREADY_EXISTS {
+            if let Ok(hwnd) = FindWindowW(None, w!("Vesper DSP")) {
+                if !hwnd.is_invalid() {
+                    let _ = ShowWindow(hwnd, SW_RESTORE);
+                    let _ = SetForegroundWindow(hwnd);
+                }
+            }
+            return;
+        }
+        mutex
+    };
+
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.unminimize();
-                let _ = window.set_focus();
-            }
+            show_or_create_main_window(app);
         }))
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if window.label() == "main" {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
+        })
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
@@ -171,10 +230,11 @@ fn main() {
                 #[cfg(windows)]
                 elevate_process_priority();
             } else {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.show();
-                }
+                show_or_create_main_window(app.handle());
             }
+
+            // 🎛️ [FiiO K11 독립 윈도우 볼륨 슬라이더 및 키보드 볼륨/음소거 50FPS 실시간 동기화 데몬 구동]
+            audio_engine::start_windows_volume_sync_daemon();
 
             let shortcut = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyW);
             if let Err(error) = app.global_shortcut().register(shortcut) {
@@ -199,7 +259,7 @@ fn main() {
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "main" => {
-                        show_main_window(app);
+                        show_or_create_main_window(app);
                     }
                     "quit" => {
                         app.exit(0);
@@ -219,12 +279,12 @@ fn main() {
                             let is_minimized = window.is_minimized().unwrap_or(false);
 
                             if !is_visible || is_minimized {
-                                let _ = window.show();
-                                let _ = window.unminimize();
-                                let _ = window.set_focus();
+                                show_or_create_main_window(app);
                             } else {
                                 let _ = window.hide();
                             }
+                        } else {
+                            show_or_create_main_window(app);
                         }
                     }
                 })
@@ -241,7 +301,9 @@ fn main() {
             get_device_supported_sample_rates,
             start_dsp,
             stop_dsp,
+            set_default_device,
             set_mute,
+            get_mute,
             apply_output_eq_profile,
             get_stream_info,
             get_engine_status,
@@ -262,13 +324,5 @@ fn elevate_process_priority() {
     };
     unsafe {
         let _ = SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
-    }
-}
-
-fn show_main_window(app: &tauri::AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.unminimize();
-        let _ = window.set_focus();
     }
 }
