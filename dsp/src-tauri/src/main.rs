@@ -2,7 +2,7 @@
 
 mod audio_engine;
 
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
@@ -92,6 +92,11 @@ fn get_engine_status() -> audio_engine::EngineStatus {
 }
 
 #[tauri::command]
+fn get_factory_presets() -> Vec<audio_engine::DspFactoryPreset> {
+    audio_engine::get_native_factory_presets()
+}
+
+#[tauri::command]
 fn blink_tray_icon(app: tauri::AppHandle) -> Result<(), String> {
     tauri::async_runtime::spawn(async move {
         if let Some(tray) = app.tray_by_id("main_tray") {
@@ -159,65 +164,56 @@ fn main() {
                 eprintln!("Failed to register global shortcut: {error}");
             }
 
-            let open = MenuItem::with_id(app, "open", "대시보드 열기", true, None::<&str>)?;
-            let signal = MenuItem::with_id(app, "signal", "시그널 경로 보기", true, None::<&str>)?;
-            let mute = MenuItem::with_id(app, "mute", "음소거 켜기/끄기", true, None::<&str>)?;
-            let settings = MenuItem::with_id(app, "settings", "환경설정", true, None::<&str>)?;
-            let quit = MenuItem::with_id(app, "quit", "완전 종료", true, None::<&str>)?;
-            let separator = PredefinedMenuItem::separator(app)?;
-            let menu = Menu::with_items(
-                app,
-                &[&open, &signal, &separator, &mute, &separator, &settings, &separator, &quit],
-            )?;
+            let main_i = MenuItem::with_id(app, "main", "메인 창 열기", true, None::<&str>)?;
+            let sep1 = PredefinedMenuItem::separator(app)?;
+            let quit_i = MenuItem::with_id(app, "quit", "Vesper DSP 종료", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&main_i, &sep1, &quit_i])?;
 
             let tray_icon_bytes = include_bytes!("../icons/tray_icon.png");
             let image = image::load_from_memory(tray_icon_bytes)
-                .expect("Failed to load tray icon")
-                .into_rgba8();
-            let tray_image = tauri::image::Image::new_owned(
-                image.clone().into_raw(),
-                image.width(),
-                image.height(),
-            );
+                .map_err(|e| format!("Failed to decode tray icon: {e}"))?;
+            let rgba = image.into_rgba8();
+            let tray_image =
+                tauri::image::Image::new_owned(rgba.clone().into_raw(), rgba.width(), rgba.height());
 
-            tauri::tray::TrayIconBuilder::with_id("main_tray")
+            let _tray = tauri::tray::TrayIconBuilder::with_id("main_tray")
                 .icon(tray_image)
-                .tooltip("Vesper DSP")
                 .menu(&menu)
+                .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
-                    "open" => show_main_window(app),
-                    "signal" => {
+                    "main" => {
                         show_main_window(app);
-                        let _ = app.emit("open-signal", ());
                     }
-                    "mute" => emit_main(app, "toggle-mute", ()),
-                    "settings" => {
-                        show_main_window(app);
-                        let _ = app.emit("open-settings", ());
+                    "quit" => {
+                        app.exit(0);
                     }
-                    "quit" => app.exit(0),
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
-                    if matches!(
-                        event,
-                        tauri::tray::TrayIconEvent::Click {
-                            button: tauri::tray::MouseButton::Left,
-                            button_state: tauri::tray::MouseButtonState::Up,
-                            ..
+                    if let tauri::tray::TrayIconEvent::Click {
+                        button: tauri::tray::MouseButton::Left,
+                        button_state: tauri::tray::MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let is_visible = window.is_visible().unwrap_or(false);
+                            let is_minimized = window.is_minimized().unwrap_or(false);
+
+                            if !is_visible || is_minimized {
+                                let _ = window.show();
+                                let _ = window.unminimize();
+                                let _ = window.set_focus();
+                            } else {
+                                let _ = window.hide();
+                            }
                         }
-                    ) {
-                        show_main_window(tray.app_handle());
                     }
                 })
                 .build(app)?;
+
             Ok(())
-        })
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                api.prevent_close();
-                let _ = window.hide();
-            }
         })
         .invoke_handler(tauri::generate_handler![
             get_source_devices,
@@ -232,6 +228,7 @@ fn main() {
             apply_output_eq_profile,
             get_stream_info,
             get_engine_status,
+            get_factory_presets,
             blink_tray_icon
         ])
         .run(tauri::generate_context!())
@@ -253,11 +250,5 @@ fn show_main_window(app: &tauri::AppHandle) {
         let _ = window.show();
         let _ = window.unminimize();
         let _ = window.set_focus();
-    }
-}
-
-fn emit_main<S: serde::Serialize + Clone>(app: &tauri::AppHandle, event: &str, payload: S) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.emit(event, payload);
     }
 }

@@ -1,11 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "VesperDSP",
-  "version": "0.0.24",
+  "version": "0.0.25",
   "identifier": "com.vesper.dsp",
   "build": {
-    "beforeDevCommand": "pnpm dev",
-    "devUrl": "http://localhost:15173",
     "beforeBuildCommand": "pnpm build",
     "frontendDist": "../build"
   },
