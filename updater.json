@@ -1,11 +1,11 @@
 {
-  "version": "0.0.25",
-  "notes": "Vesper DSP v0.0.25: BioPhys 17.0 Real-Time Core Pinning, Zero-Sleep Low Latency, Embedded Single-Binary",
-  "pub_date": "2026-08-31T02:28:00Z",
+  "version": "0.0.26",
+  "notes": "Vesper DSP v0.0.26: Zero-Virtual-Cable Windows APO Direct In-Place Audio, Auto-Device Binding, Single Output UI",
+  "pub_date": "2026-08-31T02:58:00Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.25/VesperDSP_0.0.25_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmI4MGlycit6Z2RVeFhsaWh1RWltOS96V2x1YkZScGsrM00xNUFaV2VYT0FkcTI5UVFmNW84aE1Sc0ZnOTMxbnhLZG5hbUVhcmFhWG9KL3NRMnZta1FVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4MTQzNTI0CWZpbGU6VmVzcGVyRFNQXzAuMC4yNV94NjQtc2V0dXAuZXhlCm14dFZRbkxXYTI2VTRrMmlTRzNKd2tyV3ZLSXFsL3hhcStQWlluVHlIY1RxRzdLTmJQcmhHckNvcG5aaDYvWmkvNnZVSVpIQW90V3Z2SFBjVVQyOUJRPT0K"
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.26/VesperDSP_0.0.26_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlhLN3V3eVo1YXlyVDAxNGN5MVRwb0NldnpXeS9GY2Z4VG8vdktXRm1TM01hQWhwSHRPRXdQaDZCR25oNFpGeTg5NlVCaFUxQ0hZTjFFaGZVb2xac0FjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4MTQ1MDU0CWZpbGU6VmVzcGVyRFNQXzAuMC4yNl94NjQtc2V0dXAuZXhlCjFiVU01VXhSeVkwVVN5WUxQaFZFTnZCalFseDkzK0cvL2haVVdNTTdPTXErdERkekhqOVpEd2g4NXFHbUlmRUZDMmcvV2FiNy9JdzdrK2tuVDNFWERRPT0K"
     }
   }
 }
