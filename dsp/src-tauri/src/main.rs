@@ -89,8 +89,13 @@ fn is_apo_active() -> bool {
 }
 
 #[tauri::command]
-fn auto_bind_device(device_name: String) -> Result<String, String> {
-    apo_manager::auto_bind_device_apo(&device_name)
+fn check_apo_status(device_name: String) -> bool {
+    apo_manager::check_device_apo_installed(&device_name)
+}
+
+#[tauri::command]
+fn install_apo_elevated(device_name: String) -> Result<String, String> {
+    apo_manager::install_device_apo_elevated(&device_name)
 }
 
 #[tauri::command]
@@ -242,7 +247,8 @@ fn main() {
             get_engine_status,
             get_factory_presets,
             is_apo_active,
-            auto_bind_device,
+            check_apo_status,
+            install_apo_elevated,
             blink_tray_icon
         ])
         .run(tauri::generate_context!())

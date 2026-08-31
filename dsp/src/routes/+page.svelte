@@ -83,6 +83,31 @@
   let updateStatus = '업데이트 확인';
   let isCheckingUpdate = false;
   let hasUpdate = false;
+  let isApoInstalled = false;
+  let isInstallingApo = false;
+
+  async function checkApo() {
+    if (output) {
+      try {
+        isApoInstalled = await invoke<boolean>('check_apo_status', { deviceName: output });
+      } catch {
+        isApoInstalled = false;
+      }
+    }
+  }
+
+  async function installApo() {
+    if (!output || isInstallingApo) return;
+    isInstallingApo = true;
+    try {
+      await invoke('install_apo_elevated', { deviceName: output });
+      await checkApo();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      isInstallingApo = false;
+    }
+  }
   let newVersion = '';
   let updateBody = '';
   type WindowPosition = { x: number; y: number };
@@ -709,7 +734,7 @@
 
   $: if (settingsRestored && output) {
     applySavedAutoEqForOutput(output);
-    invoke('auto_bind_device', { deviceName: output }).catch(console.error);
+    checkApo();
   }
 </script>
 
@@ -753,9 +778,27 @@
           <div class="w-full flex flex-col gap-1.5 relative group">
             <div class="flex items-center justify-between pl-1">
               <span class="text-[10px] font-semibold tracking-widest text-white/50 uppercase">Output Device (재생 장치)</span>
-              <span class="text-[9px] font-medium text-[#0A84FF] tracking-wider uppercase">Direct APO In-Place</span>
+              <span class="text-[9px] font-medium {isApoInstalled ? 'text-green-400' : 'text-yellow-400'} tracking-wider uppercase">
+                {isApoInstalled ? '● APO 직결 활성' : '○ APO 승인 대기'}
+              </span>
             </div>
             <CustomSelect bind:value={output} options={outputDevices.map(d => ({ value: d, label: d }))} bind:isOpen={outputMenuOpen} />
+            
+            {#if !isApoInstalled && output}
+              <button 
+                on:click={installApo}
+                disabled={isInstallingApo}
+                class="mt-1 w-full flex items-center justify-between px-3 py-2 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-[11px] hover:bg-yellow-500/20 transition-all text-left group {isInstallingApo ? 'opacity-50 cursor-not-allowed' : ''}"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-sm">⚡</span>
+                  <span>가상케이블 없이 직결하려면 <strong>1회 권한 승인</strong>이 필요합니다.</span>
+                </div>
+                <span class="font-bold underline text-[10px] group-hover:translate-x-0.5 transition-transform shrink-0">
+                  {isInstallingApo ? '연결 중...' : '지금 승인 ➔'}
+                </span>
+              </button>
+            {/if}
           </div>
         </div>
 
@@ -955,6 +998,25 @@
             <div class="absolute w-4 h-4 bg-white rounded-full top-[2px] transition-transform {isWindowLocked ? 'translate-x-5' : 'translate-x-[2px]'} shadow-sm"></div>
           </button>
         </div>
+        </div>
+
+        <div class="space-y-3">
+          <h3 class="text-[10px] font-bold tracking-widest text-white/50 uppercase">Windows APO Driver</h3>
+          <div class="flex justify-between items-center bg-black/30 p-4 rounded-xl border border-white/5">
+            <div>
+              <p class="text-xs font-semibold text-white/90">가상 케이블 프리 시스템 직결</p>
+              <p class="text-[10px] {isApoInstalled ? 'text-green-400' : 'text-yellow-400'} font-medium mt-1">
+                {isApoInstalled ? '● 드라이버 활성화됨 (가상 케이블 불필요)' : '○ 드라이버 미승인 (관리자 승인 필요)'}
+              </p>
+            </div>
+            <button 
+              on:click={installApo} 
+              disabled={isInstallingApo}
+              class="px-3 py-1.5 text-[10px] font-semibold rounded-lg {isApoInstalled ? 'bg-white/5 text-white/50 hover:bg-white/10' : 'bg-apple-blue text-white hover:bg-apple-blue/80 shadow-md shadow-apple-blue/20'} transition-all flex items-center gap-1.5 {isInstallingApo ? 'opacity-50 cursor-not-allowed' : ''}"
+            >
+              {isInstallingApo ? '연결 중...' : isApoInstalled ? '재연결 / 갱신' : '⚡ 드라이버 즉시 연결'}
+            </button>
+          </div>
         </div>
 
         <div class="space-y-3">

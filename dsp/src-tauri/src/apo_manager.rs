@@ -116,9 +116,46 @@ pub fn is_apo_active() -> bool {
     SHARED_MEMORY.is_some()
 }
 
-/// 🔍 [장치 이름으로 윈도우 오디오 Endpoint GUID 자동 검색 및 레지스트리 자동 바인딩]
-pub fn auto_bind_device_apo(device_name: &str) -> Result<String, String> {
-    // 1. 현재 실행 파일 디렉토리 기준으로 vesper_apo.dll 경로 추출
+/// 🔍 [APO가 해당 장치에 정상 연결되어 있는지 검사]
+pub fn check_device_apo_installed(device_name: &str) -> bool {
+    let ps_script = format!(
+        r#"
+$targetName = "{device_name}"
+$clsid = "{CLSID_VESPER_APO_STR}"
+$endpoints = Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render" -ErrorAction SilentlyContinue
+
+foreach ($ep in $endpoints) {{
+    $props = Get-ItemProperty "$($ep.PSPath)\Properties" -ErrorAction SilentlyContinue
+    if ($props) {{
+        $name1 = $props.'{{a45c254e-df1c-4efd-8020-67d146a850e0}},2'
+        $name2 = $props.'{{b3f8fa53-0004-438e-9003-51a46e139bfc}},6'
+        if (($name1 -and $name1 -like "*$targetName*") -or ($name2 -and $name2 -like "*$targetName*") -or ($targetName -like "*$name1*")) {{
+            $fx = Get-ItemProperty "$($ep.PSPath)\FxProperties" -ErrorAction SilentlyContinue
+            if ($fx -and $fx.'{{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D}},7' -eq $clsid) {{
+                Write-Output "INSTALLED"
+                exit
+            }}
+        }}
+    }}
+}}
+Write-Output "NOT_INSTALLED"
+"#
+    );
+
+    let output = std::process::Command::new("powershell")
+        .args(["-NoProfile", "-NonInteractive", "-Command", &ps_script])
+        .output();
+
+    if let Ok(out) = output {
+        let res = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        res == "INSTALLED"
+    } else {
+        false
+    }
+}
+
+/// 🛡️ [관리자 권한 UAC 팝업을 띄워 Windows MMDevices에 APO 원클릭 자동 등록]
+pub fn install_device_apo_elevated(device_name: &str) -> Result<String, String> {
     let exe_dir = std::env::current_exe()
         .map_err(|e| format!("Failed to get exe path: {e}"))?
         .parent()
@@ -127,15 +164,14 @@ pub fn auto_bind_device_apo(device_name: &str) -> Result<String, String> {
     let dll_path = exe_dir.join("vesper_apo.dll");
     let dll_path_str = dll_path.to_str().ok_or("Invalid DLL path")?.replace('/', "\\");
 
-    // 2. PowerShell 스크립트로 Windows MMDevices Render 엔드포인트 자동 검색 및 레지스트리 원클릭 등록
-    let ps_script = format!(
+    let script_content = format!(
         r#"
 $targetName = "{device_name}"
 $dllPath = "{dll_path_str}"
 $clsid = "{CLSID_VESPER_APO_STR}"
 
 # COM CLSID 등록
-$clsidPath = "HKCU:\Software\Classes\CLSID\$clsid"
+$clsidPath = "HKCR:\CLSID\$clsid"
 if (!(Test-Path $clsidPath)) {{ New-Item -Path $clsidPath -Force | Out-Null }}
 Set-ItemProperty -Path $clsidPath -Name "(Default)" -Value "Vesper BioPhys APO"
 $inproc = "$clsidPath\InprocServer32"
@@ -143,40 +179,42 @@ if (!(Test-Path $inproc)) {{ New-Item -Path $inproc -Force | Out-Null }}
 Set-ItemProperty -Path $inproc -Name "(Default)" -Value $dllPath
 Set-ItemProperty -Path $inproc -Name "ThreadingModel" -Value "Both"
 
-# MMDevices Endpoint 검색
+# MMDevices Endpoint 검색 및 FxProperties 등록
 $endpoints = Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render" -ErrorAction SilentlyContinue
-$foundGuid = $null
-
 foreach ($ep in $endpoints) {{
     $props = Get-ItemProperty "$($ep.PSPath)\Properties" -ErrorAction SilentlyContinue
     if ($props) {{
         $name1 = $props.'{{a45c254e-df1c-4efd-8020-67d146a850e0}},2'
         $name2 = $props.'{{b3f8fa53-0004-438e-9003-51a46e139bfc}},6'
         if (($name1 -and $name1 -like "*$targetName*") -or ($name2 -and $name2 -like "*$targetName*") -or ($targetName -like "*$name1*")) {{
-            $foundGuid = $ep.PSChildName
-            break
+            $fxPath = "$($ep.PSPath)\FxProperties"
+            if (!(Test-Path $fxPath)) {{ New-Item -Path $fxPath -Force | Out-Null }}
+            Set-ItemProperty -Path $fxPath -Name "{{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D}},5" -Value $clsid -Force
+            Set-ItemProperty -Path $fxPath -Name "{{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D}},6" -Value $clsid -Force
+            Set-ItemProperty -Path $fxPath -Name "{{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D}},7" -Value $clsid -Force
         }}
     }}
 }}
 
-if ($foundGuid) {{
-    $fxPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render\$foundGuid\FxProperties"
-    if (!(Test-Path $fxPath)) {{ New-Item -Path $fxPath -Force | Out-Null }}
-    Set-ItemProperty -Path $fxPath -Name "{{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D}},5" -Value $clsid -ErrorAction SilentlyContinue
-    Set-ItemProperty -Path $fxPath -Name "{{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D}},6" -Value $clsid -ErrorAction SilentlyContinue
-    Set-ItemProperty -Path $fxPath -Name "{{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D}},7" -Value $clsid -ErrorAction SilentlyContinue
-    Write-Output "SUCCESS:$foundGuid"
-}} else {{
-    Write-Output "FALLBACK_GENERIC"
-}}
+# 윈도우 오디오 엔진 재시작
+net stop audiosrv /y
+net start audiosrv
 "#
     );
 
-    let output = std::process::Command::new("powershell")
-        .args(["-NoProfile", "-NonInteractive", "-Command", &ps_script])
-        .output()
-        .map_err(|e| format!("PowerShell execution failed: {e}"))?;
+    // 임시 ps1 파일 생성 후 RunAs로 실행
+    let temp_file = std::env::temp_dir().join("vesper_bind_apo.ps1");
+    std::fs::write(&temp_file, script_content).map_err(|e| format!("Failed to write temp script: {e}"))?;
 
-    let result = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    Ok(result)
+    let ps_cmd = format!(
+        "Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \"{}\"' -Verb RunAs -Wait",
+        temp_file.to_str().unwrap().replace('/', "\\")
+    );
+
+    let _ = std::process::Command::new("powershell")
+        .args(["-NoProfile", "-NonInteractive", "-Command", &ps_cmd])
+        .output();
+
+    let _ = std::fs::remove_file(temp_file);
+    Ok("SUCCESS".to_string())
 }
