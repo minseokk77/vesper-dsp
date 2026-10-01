@@ -1,11 +1,11 @@
 {
-  "version": "0.0.29",
+  "version": "0.0.30",
+  "notes": "v0.0.30: 부팅 시 백그라운드 시작, 위젯 복원과 중복 자동 실행의 창 표시 수정, 기존 업데이트 서명 키 호환성 복구",
+  "pub_date": "2026-10-02T00:00:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmY1WWxici9JWmtiazZVdVlhcDcxRHJwcE4raDF4Tm1ERHNKaWNONXZPRC90MFJNRlc3VUdwVUZ1RFNNQzZpYWpKbGhGQWNvVURmUDRrY0V3YnZqTWdrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4Nzk5Njg0CWZpbGU6VmVzcGVyRFNQXzAuMC4yOV94NjQtc2V0dXAuZXhlCmtxTDE4elZsZUtsQnh4dXFUclFxajlZWlYxU2JNZFYzN2JPUjBLeUN4UjkwR2dOYndKZHR0SVgyMlhLZHEvbVFJZ1JLemkrdmVOVjN4RE43a0FqWEFnPT0K",
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.29/VesperDSP_0.0.29_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVi9TK3c4b1Vyb3NEbEoxMHFpZkhFMkxPa2UrMldoN3MrbmM1bHFWRFpEZWJQcXIvcHBqV2dtNEJMVFVaZWxSN0o5clpRZXBlOWp3OFVmZ3BCK3M5UjlDT25jK2tENXdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwODczNDgwCWZpbGU6VmVzcGVyRFNQXzAuMC4zMF94NjQtc2V0dXAuZXhlCkhFdUJZQ0RiSk55Y1N5dzdhVmw2SktxOG54Mk9PdDdEWUowUGN2ektyQWc1dDBxQVNyZVBBa2NFeGlCbitGUkw0cndReHU4QmdhWHlhZWQvdHJ1dkFBPT0K",
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.30/VesperDSP_0.0.30_x64-setup.exe"
     }
-  },
-  "notes": "v0.0.29: stable live device/mode/filter transitions and refreshed Signal Path",
-  "pub_date": "2026-09-08T02:00:00Z"
+  }
 }
