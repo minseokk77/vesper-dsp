@@ -1,11 +1,11 @@
 {
-  "version": "0.0.30",
-  "notes": "v0.0.30: 부팅 시 백그라운드 시작, 위젯 복원과 중복 자동 실행의 창 표시 수정, 기존 업데이트 서명 키 호환성 복구",
-  "pub_date": "2026-10-02T00:00:00Z",
+  "version": "0.0.31",
+  "notes": "v0.0.31: FiiO K11 Windows 음량 조절 복구, 앱별 음량 비율 유지, DSP 시작 및 최신 설정 적용 안정화",
+  "pub_date": "2026-10-03T02:23:17.835Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVi9TK3c4b1Vyb3NEbEoxMHFpZkhFMkxPa2UrMldoN3MrbmM1bHFWRFpEZWJQcXIvcHBqV2dtNEJMVFVaZWxSN0o5clpRZXBlOWp3OFVmZ3BCK3M5UjlDT25jK2tENXdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwODczNDgwCWZpbGU6VmVzcGVyRFNQXzAuMC4zMF94NjQtc2V0dXAuZXhlCkhFdUJZQ0RiSk55Y1N5dzdhVmw2SktxOG54Mk9PdDdEWUowUGN2ektyQWc1dDBxQVNyZVBBa2NFeGlCbitGUkw0cndReHU4QmdhWHlhZWQvdHJ1dkFBPT0K",
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.30/VesperDSP_0.0.30_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVi9TK3c4b1Vyb2loV3NKdEVWSjF0RkhNRjhadnNBMjhjdTBjNmphL1FhZjBRMjRNSWFGRXErL0tWTU9PMzZoR04wS0s3alFqR1REQ2pCVlhYOGh2UmRSTkpPVktmcnc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwOTk0MTk3CWZpbGU6VmVzcGVyRFNQXzAuMC4zMV94NjQtc2V0dXAuZXhlCnBTUXRqSGdQOGtJcEhtb1RTeXVQa1RaS1NldlVwZW15WlZLV3ZnKzVtdkV4Wk9LY0VKb20zanlpbWROUk9xS1h6Ry85aW9JUDdlWHJmRmJjZ0JqTkRnPT0K",
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.31/VesperDSP_0.0.31_x64-setup.exe"
     }
   }
 }
