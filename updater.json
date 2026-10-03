@@ -1,11 +1,11 @@
 {
-  "version": "0.0.31",
-  "notes": "v0.0.31: FiiO K11 Windows 음량 조절 복구, 앱별 음량 비율 유지, DSP 시작 및 최신 설정 적용 안정화",
-  "pub_date": "2026-10-03T02:23:17.835Z",
+  "version": "0.0.32",
+  "notes": "v0.0.32: DSP 앱·트레이 아이콘을 흰색 선 Vesper 로고와 투명 배경으로 변경",
+  "pub_date": "2026-10-03T02:50:35.058Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVi9TK3c4b1Vyb2loV3NKdEVWSjF0RkhNRjhadnNBMjhjdTBjNmphL1FhZjBRMjRNSWFGRXErL0tWTU9PMzZoR04wS0s3alFqR1REQ2pCVlhYOGh2UmRSTkpPVktmcnc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwOTk0MTk3CWZpbGU6VmVzcGVyRFNQXzAuMC4zMV94NjQtc2V0dXAuZXhlCnBTUXRqSGdQOGtJcEhtb1RTeXVQa1RaS1NldlVwZW15WlZLV3ZnKzVtdkV4Wk9LY0VKb20zanlpbWROUk9xS1h6Ry85aW9JUDdlWHJmRmJjZ0JqTkRnPT0K",
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.31/VesperDSP_0.0.31_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVi9TK3c4b1Vyb2hLUHFjc2tpOEE4SlJPUmxGRG05b1BkbkhtNUxpaFJENTRpMVRrRDc5U0hjVTh0L3MwWmRENnpvT1hpY0pKWDU5V3RGT3ptempqTW9NeVhXREdVdWc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwOTk1ODM1CWZpbGU6VmVzcGVyRFNQXzAuMC4zMl94NjQtc2V0dXAuZXhlCkhjM3BRVkkvUkJpOGRmWmgweEhvdi9HckxKSDhPZHBleXVoeTlxNE9ZdFg2V3I3L3AyaEJWODh3T0VoUUhyL1BMZG4zb0NwUUYxdGVJY3pUZmtZc0RBPT0K",
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.32/VesperDSP_0.0.32_x64-setup.exe"
     }
   }
 }
