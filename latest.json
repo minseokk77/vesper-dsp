@@ -1,11 +1,11 @@
 {
-  "version": "0.0.33",
-  "notes": "v0.0.33: 직결 APO 실제 처리 및 COM 집계 수정, 장치 재연결·모드 전환 안정화, STOP 음소거, 상태 기반 Signal Path 복원, 게이밍/Hi-Fi 공통 높이와 스크롤 없는 표시, 업데이트 단계·진단 개선",
-  "pub_date": "2026-10-04T04:49:20.445853Z",
+  "version": "0.0.34",
+  "notes": "v0.0.34: 앱 정상 종료·강제 종료 시 선택한 출력 장치 자동 음소거, 독립 오디오 감시 프로그램, 재생 및 MUTE의 선택 장치 제어 보완",
+  "pub_date": "2026-10-04T09:50:58.568924Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVi9TK3c4b1Vyb2k2bEFhbGlsNDNubzFKRm9xbWNrT1NqVm9qUEdDRXd4eEM1RjRrcHNCbmNHdDE4aGVuYmRQWVovRzIwQlVmYU51cmV1NkRKQjdieEhpUklYUVZlQ1FZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxMDg5MTkyCWZpbGU6VmVzcGVyRFNQXzAuMC4zM194NjQtc2V0dXAuZXhlCndxMk1ISVRUYTRoNFRiK1dLVnBldHJvTjJ6MWRTdmJpQnhjRElNMEYydXBOR1EzSUdVWXdWdHlHM3NJWmlMYWJKSEx5L3Y2Yi9pQ1Y4ZGFiMHFoWUR3PT0K",
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.33/VesperDSP_0.0.33_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVi9TK3c4b1Vyb3AxMGpTbnZGNm9ZemJ3eHZKYnc0bHB5YnA1QWdBQ3RKMjZPc3QvcXJ2Z2NaM1ZJU29uRWxqZlI0UHpBaGJoUSs3TE9YdnUvclZpYVBPSzlOUEVrOUFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxMTA3NDIyCWZpbGU6VmVzcGVyRFNQXzAuMC4zNF94NjQtc2V0dXAuZXhlCm9GRHlUNXRLVk9saXJkSWpZdnE5THkyTXlwWVlSaldSdlB2Wm8vRU1GSW10MEtyZUc1S0hLeTdRZWoxZEJ4V21aMjZMWXRrem85ZXB0QUxMYy82QkFRPT0K",
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.34/VesperDSP_0.0.34_x64-setup.exe"
     }
   }
 }
