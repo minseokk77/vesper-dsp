@@ -1,11 +1,11 @@
 {
-  "version": "0.0.34",
-  "notes": "v0.0.34: 앱 정상 종료·강제 종료 시 선택한 출력 장치 자동 음소거, 독립 오디오 감시 프로그램, 재생 및 MUTE의 선택 장치 제어 보완",
-  "pub_date": "2026-10-04T09:50:58.568924Z",
+  "version": "0.0.35",
+  "notes": "Vesper DSP 0.0.35\n\n- Windhawk 없이 동작하는 작업표시줄 컨트롤을 DSP에 포함했습니다. 앱 열기, 모드, 재생/정지, 음소거 항목을 각각 표시하거나 숨길 수 있습니다.\n- 작업표시줄의 호버 스타일과 아이콘 중앙 정렬을 보완하고 재생·정지 표시의 잘림을 수정했습니다.\n- 기존 창을 줄이는 미니 위젯을 제거했습니다.\n- 부팅 시 DSP 적용 복구와 별도 EQ 클라이언트 연결을 보완했습니다. AutoEQ와 외부 EQ는 별도로 관리합니다.\n- 외부 Google Fonts 요청을 제거했습니다.\n\n작업표시줄 기능과 동봉 리소스를 사용하려면 설치 프로그램으로 설치·업데이트하세요. 기존 Vesper Windhawk 모드가 켜져 있으면 중복 표시를 피하기 위해 먼저 꺼 주세요.\n",
+  "pub_date": "2026-10-08T08:21:29.585843Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVi9TK3c4b1Vyb3AxMGpTbnZGNm9ZemJ3eHZKYnc0bHB5YnA1QWdBQ3RKMjZPc3QvcXJ2Z2NaM1ZJU29uRWxqZlI0UHpBaGJoUSs3TE9YdnUvclZpYVBPSzlOUEVrOUFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxMTA3NDIyCWZpbGU6VmVzcGVyRFNQXzAuMC4zNF94NjQtc2V0dXAuZXhlCm9GRHlUNXRLVk9saXJkSWpZdnE5THkyTXlwWVlSaldSdlB2Wm8vRU1GSW10MEtyZUc1S0hLeTdRZWoxZEJ4V21aMjZMWXRrem85ZXB0QUxMYy82QkFRPT0K",
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.34/VesperDSP_0.0.34_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVi9TK3c4b1Vyb3FJNHhPTG1PektOYXZCT1EvR2xjMjF1M0poU3FadnN4bktlUjRjUjBpdVVES2txTDBsU2gyS0J2ZzUyUjVMNEE5S0lKeXp5Vk4vQmtoTy9QZEgrVEE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxNDQ3NDE3CWZpbGU6VmVzcGVyRFNQXzAuMC4zNV94NjQtc2V0dXAuZXhlCkxGTXZDa1V5K0E1OXMzNktvNTRmaWw5QmszVGthTmdVd21VVG11VTRRQ1A4RGt0Q1ZvQXhtY0xUNG5QUTRMdnZGblJJY21sa29jSmNXMFE1R0E3cUFnPT0K",
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.35/VesperDSP_0.0.35_x64-setup.exe"
     }
   }
 }
