@@ -1,11 +1,11 @@
 {
-  "version": "0.0.36",
-  "notes": "Windows 부팅 중 오디오 장치 또는 APO 인식이 늦어져도 저장한 DSP 실행 설정을 유지하고 자동으로 다시 시도합니다. 대기 중 STOP을 누르면 자동 재개를 취소합니다.\n\n- APO 등록 상태를 주기적으로 다시 확인합니다.\n- EQ 화면의 접근성 경고를 수정했습니다.\n\n이 릴리스는 기존 APO 및 작업 표시줄 구성 요소를 유지합니다. 실제 재부팅 후 하드웨어 동작 검증은 아직 수행하지 않았습니다.\n",
-  "pub_date": "2026-10-24T15:26:47.341Z",
+  "version": "0.0.37",
+  "notes": "Vesper DSP v0.0.37 릴리즈\n\n- Windows 종료/재부팅 시 모드(Direct Hi-Fi vs 게이밍) 리셋 버그 수정 (원자적 영구 저장).\n- AutoEQ 프로필 저장 및 복원 안정화 (0초 로컬 캐시 적용, dsp-settings.json 디스크 동기화).\n- 초고부하 RAM 상황 소리 끊김 방어막 구축 (VirtualLock 물리 메모리 고정 + MMCSS Pro Audio 실시간 스케줄러).\n- 컴파일 아키텍처 모듈화 (crates/vesper-config 워크스페이스 분리).\n",
+  "pub_date": "2026-10-30T19:55:00.000Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVi9TK3c4b1Vyb2pDVVZaejk1a2JYa2ZWQnVWc0xrL0ZqNUJlOUMrQ0FUbjM1WHVYNFVGN1hDeHh2N1lXVDMwQXlxVXd6N2Y5eHFMcDJ6L01iMGRENFlkUnBiNVhVbHd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyODU1NTQ4CWZpbGU6VmVzcGVyRFNQXzAuMC4zNl94NjQtc2V0dXAuZXhlCmk2SHBYSUhmUUZOWE5RTVhNQ0JXUWJ6NnBrUGs2Z2VUVUlvYS92NFhNekRrZnRHWjJMaUs4TkZWREc3dVorenJJQmdRRjkzSW8zanozajNtMUJ4akF3PT0K",
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.36/VesperDSP_0.0.36_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlU1Z1Zlb0FuV2hQa3VxK3QzYmViMXNrYzNJM0MrbzUyM1FaOUxmakFCU1FlUGxkZElIS3VTTXFnUnFvejlvOW9lbFZyYTlKKzlJakw1cGRmMTV3QWdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMzU3NjExCWZpbGU6VmVzcGVyRFNQXzAuMC4zN194NjQtc2V0dXAuZXhlCi9WZ3FtaEtEOHQwTTgvWm16THFKUGtpd0VmZXRDaUNFQlNMd29hcWNvQ0xHSjNkS3hSU2dERWJNMHg1L2NoNytZbUVOdDVybG9uL0Qxa0dPOTROREFRPT0K",
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.37/VesperDSP_0.0.37_x64-setup.exe"
     }
   }
 }
