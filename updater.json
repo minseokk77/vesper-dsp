@@ -1,10 +1,10 @@
 {
   "version": "0.0.38",
   "notes": "Vesper DSP v0.0.38 릴리즈\n\n- Synapse Kit 초고속 인과율 병렬 증분 빌더(Causal Build Engine) 탑재로 배포 빌드 시간 82배 단축.\n- 단일 NSIS 인스톨러 및 zlib 고속 압축 스트리밍 적용으로 패키징 병목 해소.\n- Minisign / Ed25519 인과율 암호화 서명 파이프라인 연동 및 업데이터 서명 키 완전 동기화.\n- NSIS RestartManager 매크로 패치로 인스톨러 업데이트 및 백그라운드 프로세스 세션 복구 안정성 강화.\n",
-  "pub_date": "2026-10-31T14:20:00.000Z",
+  "pub_date": "2026-10-31T14:30:00.000Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmVlME1sWjhzcVlXeVdVU3h3VDBtMncvS3kzUCtySFIzWE9zZHFhNWgwdzRmeWdpSFptb1BXNDc3NCt0YTU4dGNUZmNoa3Q4UTFmZzRxUDR5TGN4eVFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNDU2NDA0CWZpbGU6VmVzcGVyRFNQXzAuMC4zOF94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjM4CnFsdE1HejcvUUprNUVjZFVLSkVlbnBoMVNZUk4vMWE5ellCOHRuTGVQU1dpdnczeW93bWU0dnlLaDNnR2NTMFJiUUI4aGhIZ2NPQlg0aWFuUjdkeEJRPT0K",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVi9TK3c4b1Vyb3YzNmVITHYrNk5zT0hOT0NvTTBuVEx6bDdiU1h6aHRESjZJRm5INDZBNG8rTW8yNnRiOFhkcnJmNTEzeWQ4cXB3NWxRZEpPWVBnT2hlUFpMVEZYWUE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNDU3MDQ4CWZpbGU6VmVzcGVyRFNQXzAuMC4zOF94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjM4CjJyYUhMYTFqODJIWVBxNkUyTklNRGdJdGRaelVsSmJIMDJMekpxL1RlSXlxdE5UeXJoUFI3UExTM0N4RTlHVFFES21FbDhOZ1F0RTFtM1Axc1QxM0NnPT0K",
       "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.38/VesperDSP_0.0.38_x64-setup.exe"
     }
   }
