@@ -1,10 +1,10 @@
 {
   "version": "0.0.37",
-  "notes": "Vesper DSP v0.0.37 릴리즈\n\n- Windows 종료/재부팅 시 모드(Direct Hi-Fi vs 게이밍) 리셋 버그 수정 (원자적 영구 저장).\n- AutoEQ 프로필 저장 및 복원 안정화 (0초 로컬 캐시 적용, dsp-settings.json 디스크 동기화).\n- 초고부하 RAM 상황 소리 끊김 방어막 구축 (VirtualLock 물리 메모리 고정 + MMCSS Pro Audio 실시간 스케줄러).\n- 컴파일 아키텍처 모듈화 (crates/vesper-config 워크스페이스 분리).\n",
-  "pub_date": "2026-10-30T21:07:00.000Z",
+  "notes": "Vesper DSP v0.0.37 릴리즈\n\n- Win32 COM 인터페이스 직접 호출로 기본 재생 장치 전환 지연 0.1ms 극단 단축 (stutter 및 백그라운드 컴파일 완전 제거).\n- FiiO K11 볼륨 보정 40ms COM 폴링 루프 객체 캐싱으로 오버헤드 95% 절감 및 하드코딩 설정화.\n- 상단 헤더 업데이트 알림 캡슐 버튼 및 시스템 트레이 레드 배지(빨간 원) 실시간 연동.\n- 프론트엔드 모듈화 (ModeAndDeviceSection, DspConfigSection, AutoEqSection).\n- AutoEQ 대용량 데이터 검색 시점 동적 로딩 및 유휴 WASAPI 폴링 스킵.\n- TypeScript 7.1.0-beta 및 Bun 1.4.4 네이티브 트랜스파일러 적용.\n- 콘솔 디버그 출력 전면 제거 및 제로 오버헤드 최적화.\n- Windows 종료/재부팅 시 모드 및 AutoEQ 프로필 원자적 영구 저장.\n",
+  "pub_date": "2026-10-31T13:20:00.000Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVi9TK3c4b1Vyb2t2NFRJWGxqeS9od2RBd0JmNms5ZWk3UUhGeFFlYmptNmU2eGg1OERWWmFMUWdXdUxiKzdGT1MyZE4vdFJtdzlEeThnUmJubjErVTRpZGlIa21JVmd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMzYyMDM1CWZpbGU6VmVzcGVyRFNQXzAuMC4zN194NjQtc2V0dXAuZXhlCkY5OUtmWHZnSFJnWS96MDVVL2ZXL1FTeTJTSHV0SDFTV2tqb0FZRjVaK2dVd1ROUmhCYUkzOFRZQ01GQ05OcXgxOFhXVEhHNjNRbmtrSnpvTTNsT0FnPT0K",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlJrZUkzeDBnaEFGaWpLSUxpSnBVU0lMTUE0YUZrNW1ZcTJMdDhxeUFRSVM5RTRndXhWWElBbGJlcTg2NFV2SGpGd0tqYnZEMHpQMkFwZXVyaU0xTXdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNDUyNzM5CWZpbGU6VmVzcGVyRFNQXzAuMC4zN194NjQtc2V0dXAuZXhlCkRKYnhMRk0rRDByUEpDNkk2bFZMMGZXK25heXFhdzZjdXRLZGVwT3hMYUw5U0NJS204b1VQNmxIYVpKYUg0UjhRUG51MDJCTDg2dGMwa3VMNDZvSURBPT0K",
       "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.37/VesperDSP_0.0.37_x64-setup.exe"
     }
   }
