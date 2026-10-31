@@ -1,11 +1,11 @@
 {
-  "version": "0.0.37",
-  "notes": "Vesper DSP v0.0.37 릴리즈\n\n- Win32 COM 인터페이스 직접 호출로 기본 재생 장치 전환 지연 0.1ms 극단 단축 (stutter 및 백그라운드 컴파일 완전 제거).\n- FiiO K11 볼륨 보정 40ms COM 폴링 루프 객체 캐싱으로 오버헤드 95% 절감 및 하드코딩 설정화.\n- 상단 헤더 업데이트 알림 캡슐 버튼 및 시스템 트레이 레드 배지(빨간 원) 실시간 연동.\n- 프론트엔드 모듈화 (ModeAndDeviceSection, DspConfigSection, AutoEqSection).\n- AutoEQ 대용량 데이터 검색 시점 동적 로딩 및 유휴 WASAPI 폴링 스킵.\n- TypeScript 7.1.0-beta 및 Bun 1.4.4 네이티브 트랜스파일러 적용.\n- 콘솔 디버그 출력 전면 제거 및 제로 오버헤드 최적화.\n- Windows 종료/재부팅 시 모드 및 AutoEQ 프로필 원자적 영구 저장.\n",
-  "pub_date": "2026-10-31T13:20:00.000Z",
+  "version": "0.0.38",
+  "notes": "Vesper DSP v0.0.38 릴리즈\n\n- Synapse Kit 초고속 인과율 병렬 증분 빌더(Causal Build Engine) 탑재로 배포 빌드 시간 82배 단축.\n- 단일 NSIS 인스톨러 및 zlib 고속 압축 스트리밍 적용으로 패키징 병목 해소.\n- Minisign / Ed25519 인과율 암호화 서명 파이프라인 연동 및 업데이터 서명 키 완전 동기화.\n- NSIS RestartManager 매크로 패치로 인스톨러 업데이트 및 백그라운드 프로세스 세션 복구 안정성 강화.\n",
+  "pub_date": "2026-10-31T14:20:00.000Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlJrZUkzeDBnaEFGaWpLSUxpSnBVU0lMTUE0YUZrNW1ZcTJMdDhxeUFRSVM5RTRndXhWWElBbGJlcTg2NFV2SGpGd0tqYnZEMHpQMkFwZXVyaU0xTXdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNDUyNzM5CWZpbGU6VmVzcGVyRFNQXzAuMC4zN194NjQtc2V0dXAuZXhlCkRKYnhMRk0rRDByUEpDNkk2bFZMMGZXK25heXFhdzZjdXRLZGVwT3hMYUw5U0NJS204b1VQNmxIYVpKYUg0UjhRUG51MDJCTDg2dGMwa3VMNDZvSURBPT0K",
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.37/VesperDSP_0.0.37_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmVlME1sWjhzcVlXeVdVU3h3VDBtMncvS3kzUCtySFIzWE9zZHFhNWgwdzRmeWdpSFptb1BXNDc3NCt0YTU4dGNUZmNoa3Q4UTFmZzRxUDR5TGN4eVFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNDU2NDA0CWZpbGU6VmVzcGVyRFNQXzAuMC4zOF94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjM4CnFsdE1HejcvUUprNUVjZFVLSkVlbnBoMVNZUk4vMWE5ellCOHRuTGVQU1dpdnczeW93bWU0dnlLaDNnR2NTMFJiUUI4aGhIZ2NPQlg0aWFuUjdkeEJRPT0K",
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.38/VesperDSP_0.0.38_x64-setup.exe"
     }
   }
 }
