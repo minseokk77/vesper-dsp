@@ -1,11 +1,11 @@
 {
-  "version": "0.0.38",
-  "notes": "Vesper DSP v0.0.38 릴리즈\n\n- UI 및 작업표시줄 0ms 즉각 반응성(Optimistic UI) 최적화 (메인 토글, 모드 탭, 작업표시줄 글리프 즉시 전환).\n- 작업표시줄 위젯 클릭 시 회색 비활성화 프리징 현상 제거 및 네이티브 호버/클릭 효과 보존.\n- CPAL COM 오디오 장치 열거 캐싱(ENDPOINT_CACHE) 및 6대 쿼리 함수 비동기화(spawn_blocking)로 메인 IPC 스레드 병목 해제.\n- Synapse Kit 인과율 초고속 병렬 증분 빌더 전면 통합.\n- 정식 원본 키(A22B85F2B02FFD55) Ed25519 전자 서명 적용.\n",
-  "pub_date": "2026-11-04T16:32:36.244Z",
+  "version": "0.0.39",
+  "notes": "Vesper DSP v0.0.39 릴리즈\n\n- UI 및 작업표시줄 0ms 즉각 반응성(Optimistic UI) 최적화 (메인 토글, 모드 탭, 작업표시줄 글리프 즉시 전환).\n- 작업표시줄 위젯 클릭 시 회색 비활성화 프리징 현상 제거 및 네이티브 호버/클릭 효과 보존.\n- CPAL COM 오디오 장치 열거 캐싱(ENDPOINT_CACHE) 및 6대 쿼리 함수 비동기화(spawn_blocking)로 메인 IPC 스레드 병목 해제.\n- Synapse Kit 인과율 초고속 병렬 증분 빌더 전면 통합.\n- 정식 원본 키(A22B85F2B02FFD55) Ed25519 전자 서명 적용.\n",
+  "pub_date": "2026-11-04T16:47:49.756Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVi9TK3c4b1Vyb3JrMzA3N0RMWFdlRVEwc3phQnYxMmo1ZGsrTTdMSzdRRTVnckcreE9walNIUHV6cVByUGxKNDMwZ3ZZRHp2WFBRUTZweWRZNUNobzVyd0FKQTI5OXdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzODA5NzE1CWZpbGU6VmVzcGVyRFNQXzAuMC4zOF94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjM4CmN6UnZRMlB0N2ZPSHY0MmtwdWR6dE1JQ0tZSW1wb1FLbm9CNUVHOVluNmpIWm1zclg1Wk16WkszYTdhL2FwaTNxVVkvcjYrUkVwdFJ3eXdBblprN0RnPT0K",
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.38/VesperDSP_0.0.38_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVi9TK3c4b1Vyb3MzZWFSdnBXdVNDTjgvaFFJb1JZTXd2TEhJSmdUVmRJam1IcjFsM2JOWTZNbStMNFNtbkZjUUZ6UzBZU0s3KzVyZDlxMWNWVWROeEZFSG1VZVU0MmdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzODEwODA2CWZpbGU6VmVzcGVyRFNQXzAuMC4zOV94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjM5Ci9uMGx2THJVcG1ZWEVtQjBWV1dWVEhHTURnTVlITDJIVUZ1SG5OTEJlblNKckRpOS9yWFczRDhCMDRZN05mUUUzcjVMNHlqRWVxalcvbGp1NlYrNUFRPT0K",
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.39/VesperDSP_0.0.39_x64-setup.exe"
     }
   }
 }
