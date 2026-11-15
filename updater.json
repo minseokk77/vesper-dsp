@@ -1,11 +1,11 @@
 {
-  "version": "0.0.43",
-  "notes": "Vesper DSP v0.0.43 핫픽스 릴리즈\n\n- 앱 업데이트/설치 시 `VesperTaskbarHost.exe`가 종료되지 않아 `VesperTaskbar.dll` 쓰기 오류가 발생하던 문제 수정.\n- 업데이트 설치 직전 작업 표시줄 호스트를 사전 정상 종료(`prepare_taskbar_for_update`)하고 실패 시 복구하도록 개선.\n- NSIS 인스톨러·언인스톨러에 `StopAndWaitTaskbarHost` 매크로를 추가해 `VesperTaskbarHost.exe` 종료 대기·정리 및 Explorer 훅(`Shell_TrayWnd` `WM_NULL`) 해제를 보장.\n- (v0.0.42 포함) Hi-Fi 직결 ↔ 게이밍 브릿지 빠른 연속 전환 시 UI/IPC 스레드 차단('응답 없음') 수정.\n",
-  "pub_date": "2026-11-15T04:36:30.000Z",
+  "version": "0.0.44",
+  "notes": "Vesper DSP v0.0.44 핫픽스 릴리즈\n\n- 설치·업데이트 시 `CheckIfAppIsRunning`에 전체 설치 경로(`$INSTDIR\\vesper-dsp.exe`)를 전달하고 종료 대기를 추가해 실행 중인 `vesper-dsp.exe`를 정확히 감지·종료하도록 수정.\n- 비정상 종료된 이전 `VesperTaskbarHost.exe`로 인해 Explorer에 고아 상태로 남던 `VesperTaskbar.dll` 세션을 자동 회수(`runtime.cpp` 생존 확인 및 `0x56445350` 정리 태그)하고, `host.cpp`의 `stop-ack` 무한 대기 루프를 제한 시간 및 `--cleanup` 모드로 보강.\n- NSIS 인스톨러·언인스톨러의 `StopAndWaitTaskbarHost`가 기존 활성 세션(`running=1`) 종료 신호 브로드캐스트, `VesperTaskbarHost.exe --cleanup`, 그리고 최종 `Rename` + `/REBOOTOK` 폴백까지 수행해 `VesperTaskbar.dll` 쓰기 오류를 방지.\n- (v0.0.42 포함) Hi-Fi 직결 ↔ 게이밍 브릿지 빠른 연속 전환 시 UI/IPC 스레드 차단('응답 없음') 수정.\n",
+  "pub_date": "2026-11-15T04:53:25.000Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlFBRTZrYmd3QVNpV2JodUZaZTk3aHNOQlVGTDREOGpTNGdwQ2F5NnYzVVRmbEU2KzFDMkE0dnM1NzlLOU1nWWs5NExUNzR4NmFraHVHK1pYUDI0NmdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NzE3MzYwCWZpbGU6VmVzcGVyRFNQXzAuMC40M194NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjQzClRUWFMxV1Rva3U0MG9ZVGNrQVprUE5uNnFJZXRSeGVLMGxoVXJFeTR5RUxqUWpGM3U1RUZqR0ZyWFBMdEZicWFJWDRvd3k3dUFoKzJjdUc2Zk85c0NBPT0K",
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.43/VesperDSP_0.0.43_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmJuQ1VGUmt5VWd6VDVJd3RNUHdOV0NkWkhpRXBXaXluTE5QZFI0YzJUM1BIMmJxSHRoaU10Qk1ZWlA5Y2NySzNzNXhhZXVhUThoZk1zNTY2V0RXbGdrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NzE4NDA1CWZpbGU6VmVzcGVyRFNQXzAuMC40NF94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjQ0CmQ2bzB6RnB3Si8zSllUUGt4RGJUMVFaU2xMMXJ2Tng0OVhXY2x1bzFVejc4Kzl1UHZIcStySEczZUlaSGhCR3pURmF6NHYvVjVuT2VWZGRrZ2pjcUNBPT0K",
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.44/VesperDSP_0.0.44_x64-setup.exe"
     }
   }
 }
