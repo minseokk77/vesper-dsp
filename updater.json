@@ -1,11 +1,11 @@
 {
-  "version": "0.0.42",
-  "notes": "Vesper DSP v0.0.42 핫픽스 릴리즈\n\n- Hi-Fi 직결 ↔ 게이밍 브릿지 모드를 빠르게 연속 전환할 때 UI/IPC 스레드가 차단되어 '응답 없음'이 발생하던 치명적 프리징 버그 수정.\n- APO 상태 확인(`check_apo_status`), 설정 저장(`save_dsp_settings`/`set_dsp_mode`), 트레이 동기화(`sync_tray_state`), 공간음향/우퍼 저장 커맨드를 비동기(`spawn_blocking`)로 전환해 UI 메시지 루프 차단을 제거.\n- 트레이 메뉴/툴팁 중복 재생성 방지 및 병합, 동일 설정 디스크 재쓰기 스킵, 내부 기본 재생 장치 전환 직후의 불필요한 핫플러그 새로고침 폭주 억제 적용.\n- 빠른 연속 모드 클릭을 180ms 디바운스로 병합하고 최종 모드가 이미 실행 중인 엔진과 같으면 중복 재시작을 생략하도록 개선.\n",
-  "pub_date": "2026-11-15T04:26:00.000Z",
+  "version": "0.0.43",
+  "notes": "Vesper DSP v0.0.43 핫픽스 릴리즈\n\n- 앱 업데이트/설치 시 `VesperTaskbarHost.exe`가 종료되지 않아 `VesperTaskbar.dll` 쓰기 오류가 발생하던 문제 수정.\n- 업데이트 설치 직전 작업 표시줄 호스트를 사전 정상 종료(`prepare_taskbar_for_update`)하고 실패 시 복구하도록 개선.\n- NSIS 인스톨러·언인스톨러에 `StopAndWaitTaskbarHost` 매크로를 추가해 `VesperTaskbarHost.exe` 종료 대기·정리 및 Explorer 훅(`Shell_TrayWnd` `WM_NULL`) 해제를 보장.\n- (v0.0.42 포함) Hi-Fi 직결 ↔ 게이밍 브릿지 빠른 연속 전환 시 UI/IPC 스레드 차단('응답 없음') 수정.\n",
+  "pub_date": "2026-11-15T04:36:30.000Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmVsT2Y3Nys2SzVkcS9oSDFKTXRqR2w0d0dGakhmTEdKTmpNNGVGV1pqSUNuWHgvRjVIcHg1SWY5YkdFWFJlRDJVTVZMZGNsNXgwMk0vRno1elBFMHdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NzE2NzM2CWZpbGU6VmVzcGVyRFNQXzAuMC40Ml94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjQyCm9oYitHdnRiNG1Va0VYZFByMU9SbmdIYVZkQ1lWcEd4bVprVTZaaWRzWStJTGs1UWxvSXhPZTh6K0g1SlVPUkZWNDNVeExTSWlHRXZVS1dmTjJob0RBPT0K",
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.42/VesperDSP_0.0.42_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlFBRTZrYmd3QVNpV2JodUZaZTk3aHNOQlVGTDREOGpTNGdwQ2F5NnYzVVRmbEU2KzFDMkE0dnM1NzlLOU1nWWs5NExUNzR4NmFraHVHK1pYUDI0NmdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NzE3MzYwCWZpbGU6VmVzcGVyRFNQXzAuMC40M194NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjQzClRUWFMxV1Rva3U0MG9ZVGNrQVprUE5uNnFJZXRSeGVLMGxoVXJFeTR5RUxqUWpGM3U1RUZqR0ZyWFBMdEZicWFJWDRvd3k3dUFoKzJjdUc2Zk85c0NBPT0K",
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.43/VesperDSP_0.0.43_x64-setup.exe"
     }
   }
 }
