@@ -1,11 +1,11 @@
 {
-  "version": "0.0.47",
-  "notes": "Vesper DSP v0.0.47 창 위치 및 하단 도크 여백 개선 릴리즈\n\n- 화면 하단 도크(LumaBar 등)와 하단 푸터 버튼(Stop Engine / Mute)이 겹치지 않도록 workArea 하단 회피 여백(120px)을 적용.\n- 트레이·작업표시줄에서 창을 새로 열거나 숨김 해제할 때 화면 중앙보다 위쪽으로 배치하고, 이미 열린 창은 사용자 위치를 유지하도록 개선.\n",
-  "pub_date": "2026-11-15T10:01:01.000Z",
+  "version": "0.0.48",
+  "notes": "Vesper DSP v0.0.48 최상위 Z-order 동적 전환 릴리즈\n\n- 메인 창 포커스 시 set_always_on_top(true)를 동적으로 적용해 LumaBar 등 최상위 투명 오버레이 위로 올려 하단 버튼 클릭 가로채기를 방지.\n- 포커스를 잃거나 트레이로 숨길 때 set_always_on_top(false)로 복원해 다른 앱 사용에 영향을 주지 않도록 개선.\n",
+  "pub_date": "2026-11-15T10:50:40.000Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmF6SDVEUkEwbzVVMG1jNzRDUHByUmpDaXIwT3VmZThqays3YlNwZmVJOHRycWg0bytSQXBnRjZRZ2hWMGIxaXhRN04wQ3l6Z3dFNEZBT3l4NVhaeHdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NzM2ODQyCWZpbGU6VmVzcGVyRFNQXzAuMC40N194NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjQ3CkdIbm9GVmJJeXBqajV5MSs0ZjFIUEYyazRLVERPenE1bFY4bG14eGQyRFRWdGg1dk1hRm92YmJHbUg3S3BZYkVOZGY2K2FnVzFGVzdvT0hFRlNzb0JnPT0K",
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.47/VesperDSP_0.0.47_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dllNNmlKazN2ejNTVmFCeURMTndacVdLMS9LZ01idnNoSHMzcXJTTk5yYTVOVWZ3aHFuSGkra0lhcUxMY1FXVjJpV3cxcStweklQRW9ZaUJvQ3lKUGc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NzM5ODIwCWZpbGU6VmVzcGVyRFNQXzAuMC40OF94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjQ4Ci9HYjhSZHFzYUIrVVN0U1k5Q3Y4WkVKcVNQSFVYWGdETTY3c3R0ZjFheFBGbmtEWWJEQ3diTXIzTGk1L3NyemszeTFsS25MRG1hb2xQeUJUSUZDVUN3PT0K",
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.48/VesperDSP_0.0.48_x64-setup.exe"
     }
   }
 }
