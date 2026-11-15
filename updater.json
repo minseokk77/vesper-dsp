@@ -1,11 +1,11 @@
 {
-  "version": "0.0.44",
-  "notes": "Vesper DSP v0.0.44 핫픽스 릴리즈\n\n- 설치·업데이트 시 `CheckIfAppIsRunning`에 전체 설치 경로(`$INSTDIR\\vesper-dsp.exe`)를 전달하고 종료 대기를 추가해 실행 중인 `vesper-dsp.exe`를 정확히 감지·종료하도록 수정.\n- 비정상 종료된 이전 `VesperTaskbarHost.exe`로 인해 Explorer에 고아 상태로 남던 `VesperTaskbar.dll` 세션을 자동 회수(`runtime.cpp` 생존 확인 및 `0x56445350` 정리 태그)하고, `host.cpp`의 `stop-ack` 무한 대기 루프를 제한 시간 및 `--cleanup` 모드로 보강.\n- NSIS 인스톨러·언인스톨러의 `StopAndWaitTaskbarHost`가 기존 활성 세션(`running=1`) 종료 신호 브로드캐스트, `VesperTaskbarHost.exe --cleanup`, 그리고 최종 `Rename` + `/REBOOTOK` 폴백까지 수행해 `VesperTaskbar.dll` 쓰기 오류를 방지.\n- (v0.0.42 포함) Hi-Fi 직결 ↔ 게이밍 브릿지 빠른 연속 전환 시 UI/IPC 스레드 차단('응답 없음') 수정.\n",
-  "pub_date": "2026-11-15T04:53:25.000Z",
+  "version": "0.0.45",
+  "notes": "Vesper DSP v0.0.45 안정성 핫픽스 릴리즈\n\n- 엔진 전환(`ENGINE_TRANSITION`) 중 상태/텔레메트리 조회(`get_engine_snapshot`, `eq_bridge::state`, `taskbar_bridge::status`)가 블록되어 Win32 GUI 메인 스레드 응답 없음(`AppHangB1`)이 발생하던 락 경합 제거.\n- `exit_guard` 워처 실행 시 36MB EXE 반복 해싱 및 PowerShell WMI 지연(1.5~4초)을 제거하고 캐시된 직접 프로세스 스폰(~2ms)으로 전환했으며, COM 음소거/가드 해제 작업을 `ACTIVE_GUARD` 락 바깥으로 분리.\n- `taskbar_host` 상태 조회 논블로킹 전환, 트레이 아이콘 RGBA 디코딩 캐시 및 메인 스레드 업데이트 병합, APO DLL 길이·수정시각 캐시 검증 적용.\n- Tauri IPC 명령(`start_dsp`, `set_mute`, `apply_output_eq_profile` 등) 비동기(`spawn_blocking`) 전환 및 Svelte `onResized`/`onMoved` 창 리사이즈 피드백 루프 제거.\n",
+  "pub_date": "2026-11-15T05:23:09.000Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmJuQ1VGUmt5VWd6VDVJd3RNUHdOV0NkWkhpRXBXaXluTE5QZFI0YzJUM1BIMmJxSHRoaU10Qk1ZWlA5Y2NySzNzNXhhZXVhUThoZk1zNTY2V0RXbGdrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NzE4NDA1CWZpbGU6VmVzcGVyRFNQXzAuMC40NF94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjQ0CmQ2bzB6RnB3Si8zSllUUGt4RGJUMVFaU2xMMXJ2Tng0OVhXY2x1bzFVejc4Kzl1UHZIcStySEczZUlaSGhCR3pURmF6NHYvVjVuT2VWZGRrZ2pjcUNBPT0K",
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.44/VesperDSP_0.0.44_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmE0ajVDSzhWSUhRTE1ROGVPclBTTWRHVXRPOFNpNVpQekptU3VsWUdHOFpPSnRWamxJUHU3dU9DRnE3THZrNHJKZkZrTFNqK1lRSGJ3Y2hiUW8yNmdrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NzIwMTgxCWZpbGU6VmVzcGVyRFNQXzAuMC40NV94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjQ1CjloUEMxTkdUUDBlWGFVSVNQWDIveGhxQjFIUG55eUx5Y05ROEZjblMwYml0cmQ0SXp6REViL3pnM3BNUlNUMEJiZC9pMGJqejlQaklvZTZlcFp6OER3PT0K",
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.45/VesperDSP_0.0.45_x64-setup.exe"
     }
   }
 }
