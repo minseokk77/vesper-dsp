@@ -1,11 +1,11 @@
 {
-  "version": "0.0.45",
-  "notes": "Vesper DSP v0.0.45 안정성 핫픽스 릴리즈\n\n- 엔진 전환(`ENGINE_TRANSITION`) 중 상태/텔레메트리 조회(`get_engine_snapshot`, `eq_bridge::state`, `taskbar_bridge::status`)가 블록되어 Win32 GUI 메인 스레드 응답 없음(`AppHangB1`)이 발생하던 락 경합 제거.\n- `exit_guard` 워처 실행 시 36MB EXE 반복 해싱 및 PowerShell WMI 지연(1.5~4초)을 제거하고 캐시된 직접 프로세스 스폰(~2ms)으로 전환했으며, COM 음소거/가드 해제 작업을 `ACTIVE_GUARD` 락 바깥으로 분리.\n- `taskbar_host` 상태 조회 논블로킹 전환, 트레이 아이콘 RGBA 디코딩 캐시 및 메인 스레드 업데이트 병합, APO DLL 길이·수정시각 캐시 검증 적용.\n- Tauri IPC 명령(`start_dsp`, `set_mute`, `apply_output_eq_profile` 등) 비동기(`spawn_blocking`) 전환 및 Svelte `onResized`/`onMoved` 창 리사이즈 피드백 루프 제거.\n",
-  "pub_date": "2026-11-15T05:23:09.000Z",
+  "version": "0.0.46",
+  "notes": "Vesper DSP v0.0.46 핫픽스 릴리즈\n\n- 엔진 중지(isStopping) 및 음소거 전환(pendingMuteOps) 진행 중 3.5초 폴링(refreshEngineSnapshot)이 버튼 상태를 이전 값으로 덮어쓰지 않도록 보호.\n- 창 재표시(visibilitychange) 및 포커스(focus) 시 하단 푸터(Stop Engine / Mute)가 작업표시줄 경계(workArea)에 가려지지 않도록 위치·크기 보정 최적화.\n",
+  "pub_date": "2026-11-15T09:15:46.000Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmE0ajVDSzhWSUhRTE1ROGVPclBTTWRHVXRPOFNpNVpQekptU3VsWUdHOFpPSnRWamxJUHU3dU9DRnE3THZrNHJKZkZrTFNqK1lRSGJ3Y2hiUW8yNmdrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NzIwMTgxCWZpbGU6VmVzcGVyRFNQXzAuMC40NV94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjQ1CjloUEMxTkdUUDBlWGFVSVNQWDIveGhxQjFIUG55eUx5Y05ROEZjblMwYml0cmQ0SXp6REViL3pnM3BNUlNUMEJiZC9pMGJqejlQaklvZTZlcFp6OER3PT0K",
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.45/VesperDSP_0.0.45_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmNwOGhFWnE0eml2RXgzNE0zUW1LeGJYWXRoeVJIcG84dERWOFpEbEhkUTN2V1pRNXBVOWc4R1RZTlhaRjhNbWJidEo3TE5qNmRpOFlPQmEzaThuQkE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NzM0MTE0CWZpbGU6VmVzcGVyRFNQXzAuMC40Nl94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjQ2CndVMmdHbnlnd0cvWmFpdHhhcFpZeUE1MVhVNDlnME8rcWsvNFpjM014WERyUWxnVmZrVEgwcG5DMHlQWW1mamF6aldZZDVIek1BVEdiQkl2Vk44MUR3PT0K",
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.46/VesperDSP_0.0.46_x64-setup.exe"
     }
   }
 }
