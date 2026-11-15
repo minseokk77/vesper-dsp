@@ -1,11 +1,11 @@
 {
-  "version": "0.0.46",
-  "notes": "Vesper DSP v0.0.46 핫픽스 릴리즈\n\n- 엔진 중지(isStopping) 및 음소거 전환(pendingMuteOps) 진행 중 3.5초 폴링(refreshEngineSnapshot)이 버튼 상태를 이전 값으로 덮어쓰지 않도록 보호.\n- 창 재표시(visibilitychange) 및 포커스(focus) 시 하단 푸터(Stop Engine / Mute)가 작업표시줄 경계(workArea)에 가려지지 않도록 위치·크기 보정 최적화.\n",
-  "pub_date": "2026-11-15T09:15:46.000Z",
+  "version": "0.0.47",
+  "notes": "Vesper DSP v0.0.47 창 위치 및 하단 도크 여백 개선 릴리즈\n\n- 화면 하단 도크(LumaBar 등)와 하단 푸터 버튼(Stop Engine / Mute)이 겹치지 않도록 workArea 하단 회피 여백(120px)을 적용.\n- 트레이·작업표시줄에서 창을 새로 열거나 숨김 해제할 때 화면 중앙보다 위쪽으로 배치하고, 이미 열린 창은 사용자 위치를 유지하도록 개선.\n",
+  "pub_date": "2026-11-15T10:01:01.000Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmNwOGhFWnE0eml2RXgzNE0zUW1LeGJYWXRoeVJIcG84dERWOFpEbEhkUTN2V1pRNXBVOWc4R1RZTlhaRjhNbWJidEo3TE5qNmRpOFlPQmEzaThuQkE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NzM0MTE0CWZpbGU6VmVzcGVyRFNQXzAuMC40Nl94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjQ2CndVMmdHbnlnd0cvWmFpdHhhcFpZeUE1MVhVNDlnME8rcWsvNFpjM014WERyUWxnVmZrVEgwcG5DMHlQWW1mamF6aldZZDVIek1BVEdiQkl2Vk44MUR3PT0K",
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.46/VesperDSP_0.0.46_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmF6SDVEUkEwbzVVMG1jNzRDUHByUmpDaXIwT3VmZThqays3YlNwZmVJOHRycWg0bytSQXBnRjZRZ2hWMGIxaXhRN04wQ3l6Z3dFNEZBT3l4NVhaeHdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NzM2ODQyCWZpbGU6VmVzcGVyRFNQXzAuMC40N194NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjQ3CkdIbm9GVmJJeXBqajV5MSs0ZjFIUEYyazRLVERPenE1bFY4bG14eGQyRFRWdGg1dk1hRm92YmJHbUg3S3BZYkVOZGY2K2FnVzFGVzdvT0hFRlNzb0JnPT0K",
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.47/VesperDSP_0.0.47_x64-setup.exe"
     }
   }
 }
