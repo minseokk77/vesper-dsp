@@ -1,11 +1,11 @@
 {
-  "version": "0.0.41",
-  "notes": "Vesper DSP v0.0.41 핫픽스 릴리즈\n\n- 앱 시작 시 사용자 설치 경로(%LOCALAPPDATA%\\VesperDSP\\vesper_apo.dll)가 삭제되어 APO 권한 승인 시 UAC 창이 뜨지 않던 치명적 버그 수정.\n- vesper_apo.dll 누락 또는 불일치 시 내장 번들 리소스에서 자동 복구하도록 강화.\n- Direct APO 관리자 설치(ShellExecuteExW runas)를 전용 COM STA 스레드 + 메인 창 핸들(HWND) 기준으로 실행해 UAC 대화상자가 항상 안정적으로 표시되도록 개선.\n- 설정 창(SettingsModal) 내부 APO 드라이버 카드에서도 연결 오류 메시지를 즉시 확인할 수 있도록 개선.\n",
-  "pub_date": "2026-11-15T03:31:00.000Z",
+  "version": "0.0.42",
+  "notes": "Vesper DSP v0.0.42 핫픽스 릴리즈\n\n- Hi-Fi 직결 ↔ 게이밍 브릿지 모드를 빠르게 연속 전환할 때 UI/IPC 스레드가 차단되어 '응답 없음'이 발생하던 치명적 프리징 버그 수정.\n- APO 상태 확인(`check_apo_status`), 설정 저장(`save_dsp_settings`/`set_dsp_mode`), 트레이 동기화(`sync_tray_state`), 공간음향/우퍼 저장 커맨드를 비동기(`spawn_blocking`)로 전환해 UI 메시지 루프 차단을 제거.\n- 트레이 메뉴/툴팁 중복 재생성 방지 및 병합, 동일 설정 디스크 재쓰기 스킵, 내부 기본 재생 장치 전환 직후의 불필요한 핫플러그 새로고침 폭주 억제 적용.\n- 빠른 연속 모드 클릭을 180ms 디바운스로 병합하고 최종 모드가 이미 실행 중인 엔진과 같으면 중복 재시작을 생략하도록 개선.\n",
+  "pub_date": "2026-11-15T04:26:00.000Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dlJoZXM0WG1YMHk0N0RZSWJ0Q1c5MTByVGhwcDBDblpPdUtmT0RKRU1TdDRUZzNvc1ZZNDlsYUhuOW0vc0FFcVRYZ3g4clUrRWNwQWZkelZzT1VjUHdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NzEzNDUwCWZpbGU6VmVzcGVyRFNQXzAuMC40MV94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjQxCmhwM3FzN0NFazgyRFF3b0NhQ2tKMlFCaFViRnhWbS9TREYzcy9nMHlpQXRkaW5LR1J1eWZVMTNiRFc4cFhTTHNmQ0l0QUNRZEFEeEF0N2tudEI4VUNnPT0K",
-      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.41/VesperDSP_0.0.41_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUOWFKc3kyQTZ5dmVsT2Y3Nys2SzVkcS9oSDFKTXRqR2w0d0dGakhmTEdKTmpNNGVGV1pqSUNuWHgvRjVIcHg1SWY5YkdFWFJlRDJVTVZMZGNsNXgwMk0vRno1elBFMHdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0NzE2NzM2CWZpbGU6VmVzcGVyRFNQXzAuMC40Ml94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4wLjQyCm9oYitHdnRiNG1Va0VYZFByMU9SbmdIYVZkQ1lWcEd4bVprVTZaaWRzWStJTGs1UWxvSXhPZTh6K0g1SlVPUkZWNDNVeExTSWlHRXZVS1dmTjJob0RBPT0K",
+      "url": "https://github.com/minseokk77/vesper-dsp/releases/download/v0.0.42/VesperDSP_0.0.42_x64-setup.exe"
     }
   }
 }
